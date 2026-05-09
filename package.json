@@ -1,0 +1,24 @@
+{
+  "name": "bus-training-dashboard",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node api/server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.4",
+    "bcryptjs": "^2.4.3",
+    "chart.js": "^4.5.1",
+    "chartjs-plugin-datalabels": "^2.2.0",
+    "chokidar": "^3.6.0",
+    "cors": "^2.8.5",
+    "csv-parse": "^5.5.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^7.15.0",
+    "xlsx": "^0.18.5",
+    "zustand": "^5.0.13"
+  }
+}
