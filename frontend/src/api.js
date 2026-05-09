@@ -1,4 +1,4 @@
-﻿const BASE = 'http://localhost:3001/api'
+﻿const BASE = 'https://bus-training-api.onrender.com/api'
 
 function getToken() {
   return localStorage.getItem('bt_token')
