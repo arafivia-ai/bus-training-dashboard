@@ -62,7 +62,7 @@ function adminOnly(req, res, next) {
   next()
 }
 
-// AUTH
+// ── AUTH ──────────────────────────────────────────────────────────────────────
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body
@@ -77,7 +77,7 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// USERS
+// ── USERS ─────────────────────────────────────────────────────────────────────
 app.get('/api/users', auth, adminOnly, async (req, res) => {
   try {
     const { data } = await supabase.from('users').select('id,username,email,role,created_at').order('created_at')
@@ -103,7 +103,7 @@ app.delete('/api/users/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// IN-SERVICE
+// ── IN-SERVICE ────────────────────────────────────────────────────────────────
 app.get('/api/inservice', auth, async (req, res) => {
   try {
     const { depot, training_type, attendance, nationality, from, to, page=1, limit=100 } = req.query
@@ -145,7 +145,7 @@ app.delete('/api/inservice/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// PRE-SERVICE
+// ── PRE-SERVICE ───────────────────────────────────────────────────────────────
 app.get('/api/preservice', auth, async (req, res) => {
   try {
     const { company, status, nationality, training_batch, from, to, page=1, limit=100 } = req.query
@@ -187,7 +187,7 @@ app.delete('/api/preservice/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// RECRUITMENT
+// ── RECRUITMENT ───────────────────────────────────────────────────────────────
 app.get('/api/recruitment', auth, async (req, res) => {
   try {
     const { status, company, nationality, road_test, training_batch, page=1, limit=100 } = req.query
@@ -228,7 +228,7 @@ app.delete('/api/recruitment/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// SCHOOL BUS DRIVERS
+// ── SCHOOL BUS DRIVERS ────────────────────────────────────────────────────────
 app.get('/api/schoolbus/drivers', auth, async (req, res) => {
   try {
     const { school, training_type, attendance, from, to, page=1, limit=100 } = req.query
@@ -261,7 +261,7 @@ app.delete('/api/schoolbus/drivers/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// SCHOOL BUS SUPERVISORS
+// ── SCHOOL BUS SUPERVISORS ────────────────────────────────────────────────────
 app.get('/api/schoolbus/supervisors', auth, async (req, res) => {
   try {
     const { school, training_type, attendance, from, to, page=1, limit=100 } = req.query
@@ -294,90 +294,119 @@ app.delete('/api/schoolbus/supervisors/:id', auth, adminOnly, async (req, res) =
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// ANALYTICS
+// ── ANALYTICS ─────────────────────────────────────────────────────────────────
 app.get('/api/analytics', auth, async (req, res) => {
   try {
-    const [is, ps, rec, sbd, sbs] = await Promise.all([
-      supabase.from('public_bus_inservice').select('depot,training_type,attendance,nationality,training_date').eq('is_deleted', false),
-      supabase.from('public_bus_preservice').select('company,status,nationality,training_batch,graduation_date,final_assessment,scenario_result,post_etest_result,occ_result,fire_fighting').eq('is_deleted', false),
-      supabase.from('recruitment').select('status,company,nationality,road_test_result,training_batch').eq('is_deleted', false),
-      supabase.from('school_bus_drivers').select('school,training_type,attendance,training_date').eq('is_deleted', false),
-      supabase.from('school_bus_supervisors').select('school,training_type,attendance,training_date').eq('is_deleted', false)
+    // Use COUNT queries for accurate totals — much faster than fetching all rows
+    const [
+      isCount, psCount, recCount, sbdCount, sbsCount,
+      isDepot, isType, isAtt, isNat,
+      psCompany, psStatus, psNat, psBatch,
+      psFinal, psScenario, psEtest, psOcc, psFire,
+      recStatus, recCompany, recNat, recRoad, recBatch,
+      sbdSchool, sbdType, sbsSchool, sbsType
+    ] = await Promise.all([
+      // Total counts
+      supabase.from('public_bus_inservice').select('id', { count:'exact', head:true }).eq('is_deleted', false),
+      supabase.from('public_bus_preservice').select('id', { count:'exact', head:true }).eq('is_deleted', false),
+      supabase.from('recruitment').select('id', { count:'exact', head:true }).eq('is_deleted', false),
+      supabase.from('school_bus_drivers').select('id', { count:'exact', head:true }).eq('is_deleted', false),
+      supabase.from('school_bus_supervisors').select('id', { count:'exact', head:true }).eq('is_deleted', false),
+      // In-service breakdowns
+      supabase.from('public_bus_inservice').select('depot').eq('is_deleted', false),
+      supabase.from('public_bus_inservice').select('training_type').eq('is_deleted', false),
+      supabase.from('public_bus_inservice').select('attendance').eq('is_deleted', false),
+      supabase.from('public_bus_inservice').select('nationality').eq('is_deleted', false),
+      // Pre-service breakdowns
+      supabase.from('public_bus_preservice').select('company').eq('is_deleted', false),
+      supabase.from('public_bus_preservice').select('status').eq('is_deleted', false),
+      supabase.from('public_bus_preservice').select('nationality').eq('is_deleted', false),
+      supabase.from('public_bus_preservice').select('training_batch').eq('is_deleted', false),
+      // Pre-service pass rates
+      supabase.from('public_bus_preservice').select('final_assessment').eq('is_deleted', false),
+      supabase.from('public_bus_preservice').select('scenario_result').eq('is_deleted', false),
+      supabase.from('public_bus_preservice').select('post_etest_result').eq('is_deleted', false),
+      supabase.from('public_bus_preservice').select('occ_result').eq('is_deleted', false),
+      supabase.from('public_bus_preservice').select('fire_fighting').eq('is_deleted', false),
+      // Recruitment breakdowns
+      supabase.from('recruitment').select('status').eq('is_deleted', false),
+      supabase.from('recruitment').select('company').eq('is_deleted', false),
+      supabase.from('recruitment').select('nationality').eq('is_deleted', false),
+      supabase.from('recruitment').select('road_test_result').eq('is_deleted', false),
+      supabase.from('recruitment').select('training_batch').eq('is_deleted', false),
+      // School bus breakdowns
+      supabase.from('school_bus_drivers').select('school').eq('is_deleted', false),
+      supabase.from('school_bus_drivers').select('training_type').eq('is_deleted', false),
+      supabase.from('school_bus_supervisors').select('school').eq('is_deleted', false),
+      supabase.from('school_bus_supervisors').select('training_type').eq('is_deleted', false),
     ])
 
     function countBy(arr, key) {
       const obj = {}
-      arr.forEach(r => { const v = r[key] || 'Unknown'; obj[v] = (obj[v]||0)+1 })
+      ;(arr?.data || []).forEach(r => {
+        const v = r[key] || 'Unknown'
+        obj[v] = (obj[v] || 0) + 1
+      })
       return obj
     }
 
     function passRate(arr, key) {
-      if (!arr.length) return 0
-      const pass = arr.filter(r => (r[key]||'').toLowerCase().includes('pass')).length
-      return Math.round(pass/arr.length*100)
+      const data = arr?.data || []
+      if (!data.length) return 0
+      const pass = data.filter(r => (r[key]||'').toLowerCase().includes('pass')).length
+      return Math.round(pass / data.length * 100)
     }
 
     function attendanceRate(arr) {
-      if (!arr.length) return 0
-      return Math.round(arr.filter(r=>(r.attendance||'').toLowerCase()==='present').length/arr.length*100)
-    }
-
-    function trend(arr, f='training_date') {
-      const obj = {}
-      arr.forEach(r => { if (!r[f]) return; const m=r[f].slice(0,7); obj[m]=(obj[m]||0)+1 })
-      return Object.fromEntries(Object.entries(obj).sort())
+      const data = arr?.data || []
+      if (!data.length) return 0
+      return Math.round(data.filter(r => (r.attendance||'').toLowerCase() === 'present').length / data.length * 100)
     }
 
     res.json({
       inservice: {
-        total: is.data.length,
-        attendanceRate: attendanceRate(is.data),
-        byDepot: countBy(is.data, 'depot'),
-        byType: countBy(is.data, 'training_type'),
-        byNationality: countBy(is.data, 'nationality'),
-        byAttendance: countBy(is.data, 'attendance'),
-        trend: trend(is.data)
+        total:           isCount.count || 0,
+        attendanceRate:  attendanceRate(isAtt),
+        byDepot:         countBy(isDepot, 'depot'),
+        byType:          countBy(isType, 'training_type'),
+        byNationality:   countBy(isNat, 'nationality'),
+        byAttendance:    countBy(isAtt, 'attendance'),
       },
       preservice: {
-        total: ps.data.length,
-        byCompany: countBy(ps.data, 'company'),
-        byStatus: countBy(ps.data, 'status'),
-        byNationality: countBy(ps.data, 'nationality'),
-        byBatch: countBy(ps.data, 'training_batch'),
-        finalAssessPassRate: passRate(ps.data, 'final_assessment'),
-        scenarioPassRate: passRate(ps.data, 'scenario_result'),
-        postEtestPassRate: passRate(ps.data, 'post_etest_result'),
-        occPassRate: passRate(ps.data, 'occ_result'),
-        firePassRate: passRate(ps.data, 'fire_fighting'),
-        trend: trend(ps.data, 'graduation_date')
+        total:                psCount.count || 0,
+        byCompany:            countBy(psCompany, 'company'),
+        byStatus:             countBy(psStatus, 'status'),
+        byNationality:        countBy(psNat, 'nationality'),
+        byBatch:              countBy(psBatch, 'training_batch'),
+        finalAssessPassRate:  passRate(psFinal, 'final_assessment'),
+        scenarioPassRate:     passRate(psScenario, 'scenario_result'),
+        postEtestPassRate:    passRate(psEtest, 'post_etest_result'),
+        occPassRate:          passRate(psOcc, 'occ_result'),
+        firePassRate:         passRate(psFire, 'fire_fighting'),
       },
       recruitment: {
-        total: rec.data.length,
-        byStatus: countBy(rec.data, 'status'),
-        byCompany: countBy(rec.data, 'company'),
-        byNationality: countBy(rec.data, 'nationality'),
-        byRoadTest: countBy(rec.data, 'road_test_result'),
-        byBatch: countBy(rec.data, 'training_batch')
+        total:        recCount.count || 0,
+        byStatus:     countBy(recStatus, 'status'),
+        byCompany:    countBy(recCompany, 'company'),
+        byNationality:countBy(recNat, 'nationality'),
+        byRoadTest:   countBy(recRoad, 'road_test_result'),
+        byBatch:      countBy(recBatch, 'training_batch'),
       },
       schoolDrivers: {
-        total: sbd.data.length,
-        attendanceRate: attendanceRate(sbd.data),
-        bySchool: countBy(sbd.data, 'school'),
-        byType: countBy(sbd.data, 'training_type'),
-        trend: trend(sbd.data)
+        total:         sbdCount.count || 0,
+        bySchool:      countBy(sbdSchool, 'school'),
+        byType:        countBy(sbdType, 'training_type'),
       },
       schoolSupervisors: {
-        total: sbs.data.length,
-        attendanceRate: attendanceRate(sbs.data),
-        bySchool: countBy(sbs.data, 'school'),
-        byType: countBy(sbs.data, 'training_type'),
-        trend: trend(sbs.data)
+        total:         sbsCount.count || 0,
+        bySchool:      countBy(sbsSchool, 'school'),
+        byType:        countBy(sbsType, 'training_type'),
       }
     })
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }) }
 })
 
-// CSV UPLOAD
+// ── CSV UPLOAD ────────────────────────────────────────────────────────────────
 app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
   try {
     const { type, csvData } = req.body
@@ -393,13 +422,10 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
     })
 
     if (!records.length) return res.status(400).json({ error: 'CSV is empty' })
-
     console.log(`Upload [${type}]: ${records.length} rows`)
-    console.log('Columns:', Object.keys(records[0]).join(', '))
 
     let inserted = 0, skipped = 0
 
-    // ── IN-SERVICE ────────────────────────────────────────────────────────────
     if (type === 'inservice') {
       let batch = []
       for (const r of records) {
@@ -421,74 +447,73 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
           batch.push(row)
           if (batch.length === 200) {
             const { error } = await supabase.from('public_bus_inservice').insert(batch)
-            if (error) { console.error('IS insert:', error.message); skipped += batch.length }
+            if (error) { console.error('IS:', error.message); skipped += batch.length }
             else inserted += batch.length
             batch = []
           }
-        } catch(e) { console.error('IS row:', e.message); skipped++ }
+        } catch(e) { skipped++ }
       }
       if (batch.length > 0) {
         const { error } = await supabase.from('public_bus_inservice').insert(batch)
-        if (error) { console.error('IS final:', error.message); skipped += batch.length }
+        if (error) skipped += batch.length
         else inserted += batch.length
       }
       return res.json({ ok:true, inserted, skipped, total:records.length })
     }
 
-    // ── PRE-SERVICE ───────────────────────────────────────────────────────────
     if (type === 'preservice') {
       let batch = []
       for (const r of records) {
         try {
           const row = {
-            sl:                    parseInt(r['SL']) || null,
-            rta_id:                r['RTA ID']?.trim() || r['RTA ID ']?.trim() || null,
-            license_no:            r['License No.']?.trim() || null,
-            driver_name:           r['Driver Name']?.trim() || null,
-            nationality:           r['Nationality']?.trim() || null,
-            dob:                   parseDate(r['DOB']),
-            license_issued:        parseDate(r['Date of issued']),
-            license_expired:       parseDate(r['Date of expired']),
-            place_of_issue:        r['Place of issue']?.trim() || null,
-            traffic_file:          r['Traffic file no']?.trim() || null,
-            contact:               r['Contact']?.trim() || null,
-            age:                   parseFloat(r['Age']) || null,
-            company:               r['Company']?.trim() || null,
-            road_test_date:        parseDate(r['Date of Road test']),
-            trainer_name:          r['Name of Trainer']?.trim() || null,
-            interview_date:        parseDate(r['Date of Interview']),
-            mode_of_hire:          r['Mode of Hire']?.trim() || null,
-            payment_date:          parseDate(r['Payment Date']),
-            sales_order:           r['Sales Order #']?.trim() || null,
-            revenue:               r['Revenue']?.trim() || null,
-            join_date:             parseDate(r['Join Date']),
-            training_batch:        r['Training Batch']?.trim() || null,
-            trainer_classroom:     r['Name of trainer -  Class Room']?.trim() || null,
-            trainer_wheel:         r['Name of Trainer - Behind the wheel']?.trim() || null,
-            post_etest_date:       parseDate(r['Date of Post e test']),
-            post_etest_result:     r[' Post E test']?.trim() || r['Post E test']?.trim() || null,
-            occ_date:              parseDate(r['Date of OCC']),
-            occ_result:            r['OCC']?.trim() || null,
-            training_date:         parseDate(r['Date']),
-            fire_fighting:         r['Fire Fighting']?.trim() || null,
-            road_assessment_date:  parseDate(r['Date of Road Asssesment']),
+            sl:                       parseInt(r['SL']) || null,
+            rta_id:                   r['RTA ID']?.trim() || r['RTA ID ']?.trim() || null,
+            license_no:               r['License No.']?.trim() || null,
+            driver_name:              r['Driver Name']?.trim() || null,
+            nationality:              r['Nationality']?.trim() || null,
+            dob:                      parseDate(r['DOB']),
+            license_issued:           parseDate(r['Date of issued']),
+            license_expired:          parseDate(r['Date of expired']),
+            place_of_issue:           r['Place of issue']?.trim() || null,
+            traffic_file:             r['Traffic file no']?.trim() || null,
+            contact:                  r['Contact']?.trim() || null,
+            age:                      parseFloat(r['Age']) || null,
+            company:                  r['Company']?.trim() || null,
+            road_test_date:           parseDate(r['Date of Road test']),
+            trainer_name:             r['Name of Trainer']?.trim() || null,
+            interview_date:           parseDate(r['Date of Interview']),
+            mode_of_hire:             r['Mode of Hire']?.trim() || null,
+            payment_date:             parseDate(r['Payment Date']),
+            sales_order:              r['Sales Order #']?.trim() || null,
+            revenue:                  r['Revenue']?.trim() || null,
+            join_date:                parseDate(r['Join Date']),
+            training_batch:           r['Training Batch']?.trim() || null,
+            trainer_classroom:        r['Name of trainer -  Class Room']?.trim() || null,
+            trainer_wheel:            r['Name of Trainer - Behind the wheel']?.trim() || null,
+            post_etest_date:          parseDate(r['Date of Post e test']),
+            post_etest_result:        r[' Post E test']?.trim() || r['Post E test']?.trim() || null,
+            occ_date:                 parseDate(r['Date of OCC']),
+            occ_result:               r['OCC']?.trim() || null,
+            training_date:            parseDate(r['Date']),
+            fire_fighting:            r['Fire Fighting']?.trim() || null,
+            road_assessment_date:     parseDate(r['Date of Road Asssesment']),
             final_assessment_trainer: r['Final Asssement Trainer']?.trim() || null,
-            final_assessment:      r['Final assesment']?.trim() || null,
-            scenario_date:         parseDate(r['Date of Scenario']),
-            scenario_result:       r['Scenario Result']?.trim() || null,
-            graduation_date:       parseDate(r['Graduation date']),
-            number_of_days:        parseInt(r['Number of Days']) || null,
-            transfer_date:         parseDate(r['Date of transfer operation ']),
-            status:                r['Status']?.trim() || null,
-            notes:                 r['Additional notes Regarding training']?.trim() || null,
-            weekly_report:         r['weekly Report']?.trim() || null,
-            weekly_report2:        r['weekly Report 2']?.trim() || null
+            final_assessment:         r['Final assesment']?.trim() || null,
+            scenario_date:            parseDate(r['Date of Scenario']),
+            scenario_result:          r['Scenario Result']?.trim() || null,
+            graduation_date:          parseDate(r['Graduation date']),
+            number_of_days:           parseInt(r['Number of Days']) || null,
+            transfer_date:            parseDate(r['Date of transfer operation ']),
+            status:                   r['Status']?.trim() || null,
+            notes:                    r['Additional notes Regarding training']?.trim() || null,
+            weekly_report:            r['weekly Report']?.trim() || null,
+            weekly_report2:           r['weekly Report 2']?.trim() || null
           }
           if (!row.driver_name) { skipped++; continue }
           batch.push(row)
           if (batch.length === 100) {
             const { error } = await supabase.from('public_bus_preservice').insert(batch)
-            if (error) { console.error('PS insert:', error.message); skipped += batch.length }
+            if (error) { console.error('PS:', error.message); skipped += batch.length }
             else inserted += batch.length
             batch = []
           }
@@ -496,13 +521,12 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
       }
       if (batch.length > 0) {
         const { error } = await supabase.from('public_bus_preservice').insert(batch)
-        if (error) { console.error('PS final:', error.message); skipped += batch.length }
+        if (error) skipped += batch.length
         else inserted += batch.length
       }
       return res.json({ ok:true, inserted, skipped, total:records.length })
     }
 
-    // ── RECRUITMENT ───────────────────────────────────────────────────────────
     if (type === 'recruitment') {
       let batch = []
       for (const r of records) {
@@ -537,21 +561,20 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
           batch.push(row)
           if (batch.length === 200) {
             const { error } = await supabase.from('recruitment').insert(batch)
-            if (error) { console.error('REC insert:', error.message); skipped += batch.length }
+            if (error) { console.error('REC:', error.message); skipped += batch.length }
             else inserted += batch.length
             batch = []
           }
-        } catch(e) { console.error('REC row:', e.message); skipped++ }
+        } catch(e) { skipped++ }
       }
       if (batch.length > 0) {
         const { error } = await supabase.from('recruitment').insert(batch)
-        if (error) { console.error('REC final:', error.message); skipped += batch.length }
+        if (error) skipped += batch.length
         else inserted += batch.length
       }
       return res.json({ ok:true, inserted, skipped, total:records.length })
     }
 
-    // ── SCHOOL BUS DRIVERS ────────────────────────────────────────────────────
     if (type === 'sbdrivers') {
       let batch = []
       for (const r of records) {
@@ -585,7 +608,6 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
       return res.json({ ok:true, inserted, skipped, total:records.length })
     }
 
-    // ── SCHOOL BUS SUPERVISORS ────────────────────────────────────────────────
     if (type === 'sbsupervisors') {
       let batch = []
       for (const r of records) {
