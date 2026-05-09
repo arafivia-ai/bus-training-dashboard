@@ -5,28 +5,40 @@ const USERNAME = 'admin'
 const PASSWORD = 'admin123'
 
 const FILES = [
-  { path: 'D:\\PBI\\CSV file\\In service Master sheet.csv',  type: 'inservice' },
-  { path: 'D:\\PBI\\CSV file\\Pre service Master.csv',       type: 'preservice' },
-  { path: 'D:\\PBI\\CSV file\\Recruitment Master.csv',       type: 'recruitment' },
+  { path: 'D:\\PBI\\CSV file\\Pre service Master.csv',  type: 'preservice' },
+  { path: 'D:\\PBI\\CSV file\\Recruitment Master.csv',  type: 'recruitment' },
 ]
 
-async function main() {
-  // Login
-  console.log('Logging in...')
-  const loginRes = await fetch(`${API_URL}/api/auth/login`, {
+const CHUNK_SIZE = 2000
+
+async function login() {
+  const res = await fetch(`${API_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: USERNAME, password: PASSWORD })
   })
-  const { token } = await loginRes.json()
-  if (!token) { console.error('Login failed'); process.exit(1) }
-  console.log('Login OK\n')
+  const data = await res.json()
+  if (!data.token) throw new Error('Login failed')
+  return data.token
+}
 
-  for (const { path, type } of FILES) {
-    console.log(`Importing ${type} from ${path}...`)
-    const csvData = await readFile(path, 'utf8')
-    console.log(`File size: ${(csvData.length/1024).toFixed(1)} KB`)
+async function importFile(token, path, type) {
+  console.log(`\nImporting [${type}]...`)
+  const text = await readFile(path, 'utf8')
+  const lines = text.split('\n').filter(l => l.trim())
+  const header = lines[0]
+  const dataLines = lines.slice(1)
+  console.log(`Total rows: ${dataLines.length}`)
 
+  let totalInserted = 0, totalSkipped = 0
+
+  for (let i = 0; i < dataLines.length; i += CHUNK_SIZE) {
+    const chunk = dataLines.slice(i, i + CHUNK_SIZE)
+    const from = i + 1
+    const to = Math.min(i + CHUNK_SIZE, dataLines.length)
+    process.stdout.write(`  Rows ${from}-${to}... `)
+
+    const csvData = header + '\n' + chunk.join('\n')
     const res = await fetch(`${API_URL}/api/upload/csv`, {
       method: 'POST',
       headers: {
@@ -35,15 +47,27 @@ async function main() {
       },
       body: JSON.stringify({ type, csvData })
     })
-
-    const data = await res.json()
-    if (data.ok) {
-      console.log(`SUCCESS: ${data.inserted} inserted, ${data.skipped} skipped out of ${data.total} total`)
+    const result = await res.json()
+    if (result.ok) {
+      totalInserted += result.inserted
+      totalSkipped += result.skipped
+      console.log(`OK (${result.inserted} inserted)`)
     } else {
-      console.error(`FAILED: ${data.error}`)
+      console.log(`FAILED: ${result.error}`)
     }
-    console.log('')
+    await new Promise(r => setTimeout(r, 300))
   }
+  console.log(`DONE: ${totalInserted} inserted, ${totalSkipped} skipped`)
+}
+
+async function main() {
+  console.log('Logging in...')
+  const token = await login()
+  console.log('Login OK')
+  for (const { path, type } of FILES) {
+    await importFile(token, path, type)
+  }
+  console.log('\nAll done!')
 }
 
 main().catch(console.error)
