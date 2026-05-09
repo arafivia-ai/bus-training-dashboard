@@ -5,8 +5,10 @@ const USERNAME = 'admin'
 const PASSWORD = 'admin123'
 
 const FILES = [
-  { path: 'D:\\PBI\\CSV file\\Pre service Master.csv',  type: 'preservice' },
-  { path: 'D:\\PBI\\CSV file\\Recruitment Master.csv',  type: 'recruitment' },
+  { path: 'D:\\PBI\\CSV file\\In service Master sheet.csv',  type: 'inservice' },
+  { path: 'D:\\PBI\\CSV file\\Pre service Master.csv',       type: 'preservice' },
+  { path: 'D:\\PBI\\CSV file\\Recruitment Master.csv',       type: 'recruitment' },
+  { path: 'D:\\PBI\\CSV file\\Taxi & Limousine Master.csv',  type: 'taxi' },
 ]
 
 const CHUNK_SIZE = 2000
@@ -23,7 +25,7 @@ async function login() {
 }
 
 async function importFile(token, path, type) {
-  console.log(`\nImporting [${type}]...`)
+  console.log(`\nImporting [${type}] from ${path}`)
   const text = await readFile(path, 'utf8')
   const lines = text.split('\n').filter(l => l.trim())
   const header = lines[0]
@@ -51,13 +53,13 @@ async function importFile(token, path, type) {
     if (result.ok) {
       totalInserted += result.inserted
       totalSkipped += result.skipped
-      console.log(`OK (${result.inserted} inserted)`)
+      console.log(`OK (${result.inserted} inserted, ${result.skipped} skipped)`)
     } else {
       console.log(`FAILED: ${result.error}`)
     }
     await new Promise(r => setTimeout(r, 300))
   }
-  console.log(`DONE: ${totalInserted} inserted, ${totalSkipped} skipped`)
+  console.log(`DONE [${type}]: ${totalInserted} inserted, ${totalSkipped} skipped out of ${dataLines.length}`)
 }
 
 async function main() {
@@ -67,7 +69,7 @@ async function main() {
   for (const { path, type } of FILES) {
     await importFile(token, path, type)
   }
-  console.log('\nAll done!')
+  console.log('\nAll imports complete!')
 }
 
 main().catch(console.error)

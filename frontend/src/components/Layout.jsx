@@ -2,7 +2,7 @@ import React from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import toast from 'react-hot-toast'
-import { Home, Bus, BookOpen, UserCheck, Users, School, BarChart3, Settings, LogOut } from 'lucide-react'
+import { Home, Bus, BookOpen, UserCheck, Users, School, BarChart3, Settings, LogOut, Car } from 'lucide-react'
 
 const NAV = [
   { section:'Main', items:[
@@ -16,6 +16,9 @@ const NAV = [
   { section:'School Bus', items:[
     { to:'/sb-drivers',     label:'Driver Training',     icon:<Users size={15}/> },
     { to:'/sb-supervisors', label:'Supervisor Training', icon:<School size={15}/> },
+  ]},
+  { section:'Taxi & Limousine', items:[
+    { to:'/taxi', label:'Taxi & Limousine', icon:<Car size={15}/> },
   ]},
   { section:'Reports', items:[
     { to:'/analytics', label:'Analytics & Reports', icon:<BarChart3 size={15}/> },
