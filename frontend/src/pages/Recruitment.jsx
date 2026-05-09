@@ -1,13 +1,13 @@
-﻿import React from 'react'
-import { useState, useEffect, useRef } from 'react'
+﻿import React, { useState, useEffect, useRef } from 'react'
 import { api } from '../api'
 import { useStore } from '../store'
 import toast from 'react-hot-toast'
+import { Filter, Upload, Plus, Search, UserCheck, X } from 'lucide-react'
 
 function Tag({ v }) {
   if (!v) return <span className="tag tag-gray">--</span>
   const l = v.toLowerCase()
-  const cls = (l==='on board'||l==='pass') ? 'tag-green' : (l==='not shortlisted'||l==='fail'||l==='security rejected') ? 'tag-red' : (l==='shortlisted'||l==='pipeline') ? 'tag-blue' : 'tag-gray'
+  const cls = (l==='on board'||l==='pass')?'tag-green':(l==='not shortlisted'||l==='fail'||l==='security rejected')?'tag-red':(l==='shortlisted'||l==='pipeline')?'tag-blue':'tag-gray'
   return <span className={`tag ${cls}`}>{v}</span>
 }
 
@@ -21,22 +21,21 @@ export default function Recruitment() {
   const [filters, setFilters] = useState({})
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm]       = useState({})
+  const [search, setSearch]   = useState('')
   const fileRef = useRef()
   const LIMIT = 100
 
-  async function load(p=1, f=filters) {
+  async function load(p=1,f=filters) {
     setLoading(true)
-    try {
-      const res = await api.getRecruitment({ page:p, limit:LIMIT, ...f })
-      setRows(res.data); setTotal(res.total); setPage(p)
-    } catch(e) { toast.error(e.message) }
+    try { const res=await api.getRecruitment({page:p,limit:LIMIT,...f}); setRows(res.data); setTotal(res.total); setPage(p) }
+    catch(e) { toast.error(e.message) }
     finally { setLoading(false) }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(()=>{load()},[])
 
   function applyFilter(k,v) {
-    const f = {...filters,[k]:v||undefined}
+    const f={...filters,[k]:v||undefined}
     Object.keys(f).forEach(k=>!f[k]&&delete f[k])
     setFilters(f); load(1,f)
   }
@@ -45,37 +44,27 @@ export default function Recruitment() {
     const file=e.target.files[0]; if(!file) return
     const text=await file.text()
     toast.loading('Uploading...', {id:'csv'})
-    try {
-      const res=await api.uploadCSV('recruitment',text)
-      toast.success(`Imported ${res.inserted} candidates`, {id:'csv'})
-      load(1)
-    } catch(err) { toast.error(err.message, {id:'csv'}) }
+    try { const res=await api.uploadCSV('recruitment',text); toast.success(`Imported ${res.inserted}`, {id:'csv'}); load(1) }
+    catch(err) { toast.error(err.message, {id:'csv'}) }
     e.target.value=''
   }
 
-  async function saveRecord() {
-    if(!form.full_name) return toast.error('Name required')
-    try { await api.addRecruitment(form); toast.success('Added'); setShowAdd(false); setForm({}); load(1) }
-    catch(e) { toast.error(e.message) }
-  }
-
+  const filtered = search?rows.filter(r=>(r.full_name||'').toLowerCase().includes(search.toLowerCase())):rows
   const pages = Math.ceil(total/LIMIT)
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
       <div className="dash-header">
         <div className="dh-left">
-          <div className="dh-icon" style={{background:'#fffbeb',color:'#d97706'}}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-          </div>
+          <div className="dh-icon" style={{background:'#fffbeb',color:'#d97706'}}><UserCheck size={20}/></div>
           <div><div className="dh-title">Recruitment Pipeline</div><div className="dh-sub">{total.toLocaleString()} candidates</div></div>
         </div>
         <div className="dh-actions">
-          <button className="btn btn-ghost" onClick={()=>setSlicerOpen(s=>!s)}>Slicers</button>
-          {isAdmin() && <>
+          <button className="btn btn-ghost" onClick={()=>setSlicerOpen(s=>!s)}><Filter size={14}/> Slicers</button>
+          {isAdmin()&&<>
             <input ref={fileRef} type="file" accept=".csv" style={{display:'none'}} onChange={handleCSV}/>
-            <button className="btn btn-ghost" onClick={()=>fileRef.current.click()}>Import CSV</button>
-            <button className="btn btn-primary" onClick={()=>setShowAdd(true)}>+ Add Candidate</button>
+            <button className="btn btn-ghost" onClick={()=>fileRef.current.click()}><Upload size={14}/> Import CSV</button>
+            <button className="btn btn-primary" onClick={()=>setShowAdd(true)}><Plus size={14}/> Add Candidate</button>
           </>}
         </div>
       </div>
@@ -94,7 +83,7 @@ export default function Recruitment() {
           <option value="">All Road Test</option><option value="pass">Pass</option><option value="fail">Fail</option>
         </select>
         <button className="sl-reset" onClick={()=>{setFilters({});load(1,{})}}>Reset</button>
-        <button className="sl-close" onClick={()=>setSlicerOpen(false)}>âœ•</button>
+        <button className="sl-close" onClick={()=>setSlicerOpen(false)}><X size={14}/></button>
       </div>
 
       <div className="page-body">
@@ -102,14 +91,17 @@ export default function Recruitment() {
           <div className="table-toolbar">
             <div className="tt-title">Candidates</div>
             <div className="tt-badge">{total.toLocaleString()}</div>
+            <div className="tt-right">
+              <div className="search-wrap"><Search size={13}/><input placeholder="Search name..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+            </div>
           </div>
           <div className="tbl-wrap">
             <table>
               <thead><tr><th>#</th><th>Name</th><th>Nationality</th><th>Company</th><th>Road Test</th><th>Interview</th><th>Status</th>{isAdmin()&&<th></th>}</tr></thead>
               <tbody>
-                {loading ? <tr><td colSpan={7} style={{textAlign:'center',padding:40}}><div className="spinner dark" style={{margin:'0 auto'}}/></td></tr>
-                : rows.length===0 ? <tr><td colSpan={7}><div className="tbl-empty"><div className="tbl-empty-icon">ðŸ‘¥</div><div className="tbl-empty-title">No candidates</div><div className="tbl-empty-sub">Import CSV or add manually</div></div></td></tr>
-                : rows.map((r,i)=>(
+                {loading?<tr><td colSpan={7} style={{textAlign:'center',padding:40}}><div className="spinner dark" style={{margin:'0 auto'}}/></td></tr>
+                :filtered.length===0?<tr><td colSpan={7}><div className="tbl-empty"><UserCheck size={36} style={{margin:'0 auto 12px',display:'block',color:'#cbd5e1'}}/><div className="tbl-empty-title">No candidates</div><div className="tbl-empty-sub">Import CSV or add manually</div></div></td></tr>
+                :filtered.map((r,i)=>(
                   <tr key={r.id}>
                     <td>{(page-1)*LIMIT+i+1}</td>
                     <td style={{fontWeight:500}}>{r.full_name||'--'}</td>
@@ -125,11 +117,11 @@ export default function Recruitment() {
             </table>
           </div>
           <div className="table-footer">
-            <span className="tf-info">Showing {Math.min((page-1)*LIMIT+1,total)}â€“{Math.min(page*LIMIT,total)} of {total.toLocaleString()}</span>
+            <span className="tf-info">Showing {Math.min((page-1)*LIMIT+1,total)} to {Math.min(page*LIMIT,total)} of {total.toLocaleString()}</span>
             <div className="pager">
-              {page>1&&<button onClick={()=>load(page-1)}>â€¹</button>}
+              {page>1&&<button onClick={()=>load(page-1)}>&#8249;</button>}
               {Array.from({length:Math.min(5,pages)},(_,i)=>{const p=Math.max(1,Math.min(page-2,pages-4))+i;return<button key={p} className={p===page?'active':''} onClick={()=>load(p)}>{p}</button>})}
-              {page<pages&&<button onClick={()=>load(page+1)}>â€º</button>}
+              {page<pages&&<button onClick={()=>load(page+1)}>&#8250;</button>}
             </div>
           </div>
         </div>
@@ -138,7 +130,7 @@ export default function Recruitment() {
       {showAdd&&(
         <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowAdd(false)}>
           <div className="modal-box">
-            <div className="modal-header"><div className="modal-title">Add Candidate</div><button className="modal-close" onClick={()=>setShowAdd(false)}>âœ•</button></div>
+            <div className="modal-header"><div className="modal-title">Add Candidate</div><button className="modal-close" onClick={()=>setShowAdd(false)}><X size={18}/></button></div>
             <div className="modal-body">
               <div className="form-row c2">
                 <div className="form-group"><label className="form-label">Full Name *</label><input className="form-input" onChange={e=>setForm(f=>({...f,full_name:e.target.value}))}/></div>
@@ -164,7 +156,7 @@ export default function Recruitment() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={()=>setShowAdd(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={saveRecord}>Save</button>
+              <button className="btn btn-primary" onClick={async()=>{if(!form.full_name)return toast.error('Name required');await api.addRecruitment(form);toast.success('Added');setShowAdd(false);setForm({});load(1)}}>Save</button>
             </div>
           </div>
         </div>

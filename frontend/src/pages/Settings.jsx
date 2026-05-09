@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { api } from '../api'
 import { useStore } from '../store'
 import toast from 'react-hot-toast'
+import { Settings as SettingsIcon, UserPlus, Trash2 } from 'lucide-react'
 
 export default function Settings() {
   const { user, isAdmin } = useStore()
@@ -10,7 +11,7 @@ export default function Settings() {
   const [form, setForm]   = useState({ username:'', email:'', password:'', role:'Management' })
 
   useEffect(() => {
-    if (isAdmin()) api.getUsers().then(setUsers).catch(() => {})
+    if (isAdmin()) api.getUsers().then(setUsers).catch(()=>{})
   }, [])
 
   async function addUser() {
@@ -18,42 +19,37 @@ export default function Settings() {
     if (form.password.length < 6) return toast.error('Password min 6 characters')
     try {
       const u = await api.addUser(form)
-      setUsers(prev => [...prev, u])
-      setForm({ username:'', email:'', password:'', role:'Management' })
+      setUsers(prev=>[...prev,u])
+      setForm({username:'',email:'',password:'',role:'Management'})
       toast.success('User added')
     } catch(e) { toast.error(e.message) }
   }
 
   async function removeUser(id, name) {
     if (!confirm(`Remove user "${name}"?`)) return
-    try {
-      await api.deleteUser(id)
-      setUsers(prev => prev.filter(u => u.id !== id))
-      toast.success('User removed')
-    } catch(e) { toast.error(e.message) }
+    try { await api.deleteUser(id); setUsers(prev=>prev.filter(u=>u.id!==id)); toast.success('User removed') }
+    catch(e) { toast.error(e.message) }
   }
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
       <div className="dash-header">
         <div className="dh-left">
-          <div className="dh-icon" style={{background:'#f1f5f9',color:'#475569'}}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          </div>
+          <div className="dh-icon" style={{background:'#f1f5f9',color:'#475569'}}><SettingsIcon size={20}/></div>
           <div><div className="dh-title">Settings</div><div className="dh-sub">Manage users and preferences</div></div>
         </div>
       </div>
       <div className="page-body">
         <div style={{background:'#fff',borderRadius:12,border:'1.5px solid #e2e8f0',overflow:'hidden'}}>
           <div className="stabs" style={{padding:'0 22px'}}>
-            {['general','users'].map(t => (
+            {['general','users'].map(t=>(
               <button key={t} className={`stab ${tab===t?'active':''}`} onClick={()=>setTab(t)}>
                 {t.charAt(0).toUpperCase()+t.slice(1)}
               </button>
             ))}
           </div>
           <div style={{padding:22}}>
-            {tab==='general' && (
+            {tab==='general'&&(
               <div>
                 <div className="form-row c2">
                   <div className="form-group"><label className="form-label">Dashboard Name</label><input className="form-input" defaultValue="Bus Training Dashboard"/></div>
@@ -65,14 +61,14 @@ export default function Settings() {
                 </div>
               </div>
             )}
-            {tab==='users' && (
+            {tab==='users'&&(
               <div>
                 <div style={{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:8,padding:'12px 16px',marginBottom:20,fontSize:13,color:'#1e3a8a'}}>
-                  <strong>Roles:</strong> Administrator = full access. Management = view only.
+                  <strong>Roles:</strong> Administrator = full access including import/export. Management = view only.
                 </div>
-                {isAdmin() && (
+                {isAdmin()&&(
                   <div style={{background:'#f8fafc',borderRadius:8,border:'1px solid #e2e8f0',padding:18,marginBottom:20}}>
-                    <div style={{fontSize:13,fontWeight:700,color:'#0f2044',marginBottom:14}}>Add New User</div>
+                    <div style={{fontSize:13,fontWeight:700,color:'#0f2044',marginBottom:14,display:'flex',alignItems:'center',gap:8}}><UserPlus size={16}/> Add New User</div>
                     <div className="form-row c2">
                       <div className="form-group"><label className="form-label">Username</label><input className="form-input" value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} placeholder="username"/></div>
                       <div className="form-group"><label className="form-label">Email</label><input className="form-input" type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} placeholder="email@domain.com"/></div>
@@ -85,11 +81,11 @@ export default function Settings() {
                         </select>
                       </div>
                     </div>
-                    <button className="btn btn-primary" style={{marginTop:14}} onClick={addUser}>Add User</button>
+                    <button className="btn btn-primary" style={{marginTop:14}} onClick={addUser}><UserPlus size={14}/> Add User</button>
                   </div>
                 )}
                 <div style={{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,color:'#94a3b8',marginBottom:10}}>Active Users</div>
-                {users.map(u => (
+                {users.map(u=>(
                   <div key={u.id} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',borderBottom:'1px solid #f1f5f9'}}>
                     <div className="avatar">{u.username?.[0]?.toUpperCase()}</div>
                     <div style={{flex:1}}>
@@ -97,8 +93,10 @@ export default function Settings() {
                       <div style={{fontSize:11.5,color:'#64748b'}}>{u.email||'—'}</div>
                     </div>
                     <span style={{padding:'3px 10px',borderRadius:99,fontSize:11,fontWeight:600,background:u.role==='Administrator'?'#eff6ff':'#f1f5f9',color:u.role==='Administrator'?'#1d4ed8':'#475569'}}>{u.role}</span>
-                    {isAdmin() && u.username !== 'admin' && (
-                      <button className="btn btn-ghost" style={{padding:'5px 10px',fontSize:12,color:'#dc2626',borderColor:'#fca5a5'}} onClick={()=>removeUser(u.id,u.username)}>Remove</button>
+                    {isAdmin()&&u.username!=='admin'&&(
+                      <button className="btn btn-ghost" style={{padding:'5px 10px',fontSize:12,color:'#dc2626',borderColor:'#fca5a5'}} onClick={()=>removeUser(u.id,u.username)}>
+                        <Trash2 size={13}/>
+                      </button>
                     )}
                   </div>
                 ))}
