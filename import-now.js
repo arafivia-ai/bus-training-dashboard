@@ -6,8 +6,6 @@ const PASSWORD = 'admin123'
 
 const FILES = [
   { path: 'D:\\PBI\\CSV file\\In service Master sheet.csv',  type: 'inservice' },
-  { path: 'D:\\PBI\\CSV file\\Pre service Master.csv',       type: 'preservice' },
-  { path: 'D:\\PBI\\CSV file\\Recruitment Master.csv',       type: 'recruitment' },
   { path: 'D:\\PBI\\CSV file\\Taxi & Limousine Master.csv',  type: 'taxi' },
 ]
 
