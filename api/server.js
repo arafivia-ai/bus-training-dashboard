@@ -62,43 +62,8 @@ function adminOnly(req, res, next) {
   next()
 }
 
-function countBy(arr, key) {
-  const obj = {}
-  ;(arr?.data||[]).forEach(r => {
-    const v = r[key] || 'Unknown'
-    obj[v] = (obj[v]||0) + 1
-  })
-  return obj
-}
+// ─── AUTH ────────────────────────────────────────────────────────────────────
 
-function passRate(arr, key) {
-  const data = arr?.data||[]
-  if (!data.length) return 0
-  return Math.round(data.filter(r => (r[key]||'').toLowerCase().includes('pass')).length / data.length * 100)
-}
-
-function attendanceRate(arr) {
-  const data = arr?.data||[]
-  if (!data.length) return 0
-  return Math.round(data.filter(r => (r.attendance||'').toLowerCase() === 'present').length / data.length * 100)
-}
-
-function trend(arr, dateField='training_date') {
-  // Returns { year: { month: count } } for multi-year line chart
-  const obj = {}
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-  ;(arr?.data||[]).forEach(r => {
-    const val = r[dateField]
-    if (!val) return
-    const year  = val.slice(0, 4)
-    const month = MONTHS[parseInt(val.slice(5, 7)) - 1]
-    if (!obj[year]) obj[year] = {}
-    obj[year][month] = (obj[year][month]||0) + 1
-  })
-  return obj
-}
-
-// AUTH
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body
@@ -113,7 +78,8 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// USERS
+// ─── USERS ───────────────────────────────────────────────────────────────────
+
 app.get('/api/users', auth, adminOnly, async (req, res) => {
   try {
     const { data } = await supabase.from('users').select('id,username,email,role,created_at').order('created_at')
@@ -139,7 +105,8 @@ app.delete('/api/users/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// FILTERS
+// ─── FILTERS ─────────────────────────────────────────────────────────────────
+
 app.get('/api/inservice/filters', auth, async (req, res) => {
   try {
     const [depots, types, trainers, nats] = await Promise.all([
@@ -216,7 +183,28 @@ app.get('/api/taxi/filters', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// IN-SERVICE
+app.get('/api/schoolbus/filters', auth, async (req, res) => {
+  try {
+    const [establishments, courses, roles, nats, statuses] = await Promise.all([
+      supabase.from('school_bus').select('establishment').eq('is_deleted', false),
+      supabase.from('school_bus').select('course').eq('is_deleted', false),
+      supabase.from('school_bus').select('role').eq('is_deleted', false),
+      supabase.from('school_bus').select('nationality').eq('is_deleted', false),
+      supabase.from('school_bus').select('status').eq('is_deleted', false),
+    ])
+    const unique = (arr, key) => [...new Set((arr.data||[]).map(r => r[key]).filter(Boolean))].sort()
+    res.json({
+      establishments: unique(establishments, 'establishment'),
+      courses:        unique(courses, 'course'),
+      roles:          unique(roles, 'role'),
+      nationalities:  unique(nats, 'nationality'),
+      statuses:       unique(statuses, 'status'),
+    })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+// ─── IN-SERVICE ───────────────────────────────────────────────────────────────
+
 app.get('/api/inservice', auth, async (req, res) => {
   try {
     const { depot, training_type, attendance, nationality, trainer, from, to, page=1, limit=100 } = req.query
@@ -251,7 +239,8 @@ app.delete('/api/inservice/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// PRE-SERVICE
+// ─── PRE-SERVICE ──────────────────────────────────────────────────────────────
+
 app.get('/api/preservice', auth, async (req, res) => {
   try {
     const { company, status, nationality, training_batch, from, to, page=1, limit=100 } = req.query
@@ -285,7 +274,8 @@ app.delete('/api/preservice/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// RECRUITMENT
+// ─── RECRUITMENT ──────────────────────────────────────────────────────────────
+
 app.get('/api/recruitment', auth, async (req, res) => {
   try {
     const { status, company, nationality, road_test, training_batch, page=1, limit=100 } = req.query
@@ -318,7 +308,8 @@ app.delete('/api/recruitment/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// TAXI
+// ─── TAXI ─────────────────────────────────────────────────────────────────────
+
 app.get('/api/taxi', auth, async (req, res) => {
   try {
     const { company, training_type, franchise, nationality, attendance, from, to, page=1, limit=100 } = req.query
@@ -353,27 +344,108 @@ app.delete('/api/taxi/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// ANALYTICS
+// ─── SCHOOL BUS ───────────────────────────────────────────────────────────────
+
+app.get('/api/schoolbus', auth, async (req, res) => {
+  try {
+    const { establishment, course, role, nationality, status, from, to, page=1, limit=100 } = req.query
+    let query = supabase.from('school_bus').select('*', { count:'exact' }).eq('is_deleted', false)
+    if (establishment) query = query.eq('establishment', establishment)
+    if (course)        query = query.eq('course', course)
+    if (role)          query = query.eq('role', role)
+    if (nationality)   query = query.eq('nationality', nationality)
+    if (status)        query = query.eq('status', status)
+    if (from)          query = query.gte('training_date', from)
+    if (to)            query = query.lte('training_date', to)
+    const offset = (parseInt(page)-1)*parseInt(limit)
+    query = query.order('training_date', { ascending:false }).range(offset, offset+parseInt(limit)-1)
+    const { data, error, count } = await query
+    if (error) return res.status(500).json({ error: error.message })
+    res.json({ data, total: count, page: parseInt(page) })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+app.delete('/api/schoolbus/:id', auth, adminOnly, async (req, res) => {
+  try {
+    await supabase.from('school_bus').update({ is_deleted:true }).eq('id', req.params.id)
+    res.json({ ok: true })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+// ─── ANALYTICS ────────────────────────────────────────────────────────────────
+
+async function fetchTrend(table) {
+  let all = [], from = 0
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('training_date')
+      .eq('is_deleted', false)
+      .not('training_date', 'is', null)
+      .range(from, from + 999)
+    if (error || !data?.length) break
+    all = all.concat(data)
+    if (data.length < 1000) break
+    from += 1000
+  }
+  return all
+}
+
+function buildTrend(arr) {
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const obj = {}
+  arr.forEach(r => {
+    const val = r.training_date
+    if (!val) return
+    const year  = val.slice(0, 4)
+    const month = MONTHS[parseInt(val.slice(5, 7)) - 1]
+    if (!obj[year]) obj[year] = {}
+    obj[year][month] = (obj[year][month]||0) + 1
+  })
+  return obj
+}
+
+function countBy(arr, key) {
+  const obj = {}
+  ;(arr?.data||[]).forEach(r => {
+    const v = r[key] || 'Unknown'
+    obj[v] = (obj[v]||0) + 1
+  })
+  return obj
+}
+
+function passRate(arr, key) {
+  const data = arr?.data||[]
+  if (!data.length) return 0
+  return Math.round(data.filter(r => (r[key]||'').toLowerCase().includes('pass')).length / data.length * 100)
+}
+
+function attendanceRate(arr) {
+  const data = arr?.data||[]
+  if (!data.length) return 0
+  return Math.round(data.filter(r => (r.attendance||'').toLowerCase() === 'present').length / data.length * 100)
+}
+
 app.get('/api/analytics', auth, async (req, res) => {
   try {
     const [
-      isCount, psCount, recCount, taxiCount,
-      isDepot, isType, isAtt, isNat, isTrend,
+      isCount, psCount, recCount, taxiCount, sbCount,
+      isDepot, isType, isAtt, isNat,
       psCompany, psStatus, psNat, psBatch,
       psFinal, psScenario, psEtest, psOcc, psFire,
       recStatus, recCompany, recNat, recRoad,
       taxiCompany, taxiType, taxiAtt, taxiFranchise,
-      sbCount, sbEstablishment, sbCourseType, sbRole, sbStatus, sbTrend,
+      sbEstablishment, sbCourseType, sbRole, sbStatus,
     ] = await Promise.all([
       supabase.from('public_bus_inservice').select('id', { count:'exact', head:true }).eq('is_deleted', false),
       supabase.from('public_bus_preservice').select('id', { count:'exact', head:true }).eq('is_deleted', false),
       supabase.from('recruitment').select('id', { count:'exact', head:true }).eq('is_deleted', false),
       supabase.from('taxi_limousine').select('id', { count:'exact', head:true }).eq('is_deleted', false),
+      supabase.from('school_bus').select('id', { count:'exact', head:true }).eq('is_deleted', false),
       supabase.from('public_bus_inservice').select('depot').eq('is_deleted', false),
       supabase.from('public_bus_inservice').select('training_type').eq('is_deleted', false),
       supabase.from('public_bus_inservice').select('attendance').eq('is_deleted', false),
       supabase.from('public_bus_inservice').select('nationality').eq('is_deleted', false),
-      supabase.from('public_bus_inservice').select('training_date').eq('is_deleted', false).not('training_date', 'is', null),
       supabase.from('public_bus_preservice').select('company').eq('is_deleted', false),
       supabase.from('public_bus_preservice').select('status').eq('is_deleted', false),
       supabase.from('public_bus_preservice').select('nationality').eq('is_deleted', false),
@@ -391,12 +463,15 @@ app.get('/api/analytics', auth, async (req, res) => {
       supabase.from('taxi_limousine').select('training_type').eq('is_deleted', false),
       supabase.from('taxi_limousine').select('attendance').eq('is_deleted', false),
       supabase.from('taxi_limousine').select('franchise').eq('is_deleted', false),
-      supabase.from('school_bus').select('id', { count:'exact', head:true }).eq('is_deleted', false),
       supabase.from('school_bus').select('establishment').eq('is_deleted', false),
       supabase.from('school_bus').select('course_type').eq('is_deleted', false),
       supabase.from('school_bus').select('role').eq('is_deleted', false),
       supabase.from('school_bus').select('status').eq('is_deleted', false),
-      supabase.from('school_bus').select('training_date').eq('is_deleted', false).not('training_date','is',null),
+    ])
+
+    const [isTrendData, sbTrendData] = await Promise.all([
+      fetchTrend('public_bus_inservice'),
+      fetchTrend('school_bus'),
     ])
 
     res.json({
@@ -407,7 +482,7 @@ app.get('/api/analytics', auth, async (req, res) => {
         byType:         countBy(isType, 'training_type'),
         byNationality:  countBy(isNat, 'nationality'),
         byAttendance:   countBy(isAtt, 'attendance'),
-        trend:          trend(isTrend, 'training_date'),
+        trend:          buildTrend(isTrendData),
       },
       preservice: {
         total:               psCount.count || 0,
@@ -442,13 +517,14 @@ app.get('/api/analytics', auth, async (req, res) => {
         byCourseType:    countBy(sbCourseType, 'course_type'),
         byRole:          countBy(sbRole, 'role'),
         byStatus:        countBy(sbStatus, 'status'),
-        trend:           trend(sbTrend, 'training_date'),
+        trend:           buildTrend(sbTrendData),
       },
     })
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }) }
 })
 
-// CSV UPLOAD
+// ─── CSV UPLOAD ───────────────────────────────────────────────────────────────
+
 app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
   try {
     const { type, csvData } = req.body
@@ -580,7 +656,7 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
             status: r['Status 1']?.trim()||r['Status']?.trim()||null,
             training_batch: r['Training Batch #']?.trim()||null,
             training_start: parseDate(r['Date of join Training']),
-            graduation_date: parseDate(r['Date of Graduation']),
+            graduation_date: parseDate(r['Graduation date'] || r['Date of Graduation']),
             transfer_date: parseDate(r['Date of Transfer operation']),
           }
           if (!row.full_name) { skipped++; continue }
@@ -638,7 +714,8 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }) }
 })
 
-// EXCEL UPLOAD
+// ─── EXCEL UPLOAD ─────────────────────────────────────────────────────────────
+
 app.post('/api/upload/excel', auth, adminOnly, async (req, res) => {
   try {
     const { type, rows, isFirstChunk, isFinalChunk } = req.body
@@ -665,52 +742,8 @@ app.post('/api/upload/excel', auth, adminOnly, async (req, res) => {
     res.json({ ok:true, inserted, skipped, total:rows.length })
   } catch(err) { res.status(500).json({ error: err.message }) }
 })
-// SCHOOL BUS
-app.get('/api/schoolbus/filters', auth, async (req, res) => {
-  try {
-    const [establishments, courses, roles, nats, statuses] = await Promise.all([
-      supabase.from('school_bus').select('establishment').eq('is_deleted', false),
-      supabase.from('school_bus').select('course').eq('is_deleted', false),
-      supabase.from('school_bus').select('role').eq('is_deleted', false),
-      supabase.from('school_bus').select('nationality').eq('is_deleted', false),
-      supabase.from('school_bus').select('status').eq('is_deleted', false),
-    ])
-    const unique = (arr, key) => [...new Set((arr.data||[]).map(r => r[key]).filter(Boolean))].sort()
-    res.json({
-      establishments: unique(establishments, 'establishment'),
-      courses:        unique(courses, 'course'),
-      roles:          unique(roles, 'role'),
-      nationalities:  unique(nats, 'nationality'),
-      statuses:       unique(statuses, 'status'),
-    })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
 
-app.get('/api/schoolbus', auth, async (req, res) => {
-  try {
-    const { establishment, course, role, nationality, status, from, to, page=1, limit=100 } = req.query
-    let query = supabase.from('school_bus').select('*', { count:'exact' }).eq('is_deleted', false)
-    if (establishment) query = query.eq('establishment', establishment)
-    if (course)        query = query.eq('course', course)
-    if (role)          query = query.eq('role', role)
-    if (nationality)   query = query.eq('nationality', nationality)
-    if (status)        query = query.eq('status', status)
-    if (from)          query = query.gte('training_date', from)
-    if (to)            query = query.lte('training_date', to)
-    const offset = (parseInt(page)-1)*parseInt(limit)
-    query = query.order('training_date', { ascending:false }).range(offset, offset+parseInt(limit)-1)
-    const { data, error, count } = await query
-    if (error) return res.status(500).json({ error: error.message })
-    res.json({ data, total: count, page: parseInt(page) })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.delete('/api/schoolbus/:id', auth, adminOnly, async (req, res) => {
-  try {
-    await supabase.from('school_bus').update({ is_deleted:true }).eq('id', req.params.id)
-    res.json({ ok: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
+// ─── START ────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`))
