@@ -25,28 +25,48 @@ async function req(path, options = {}) {
 }
 
 export const api = {
-  login:                 (u,p)      => req('/auth/login', { method:'POST', body:{ username:u, password:p } }),
-  getUsers:              ()         => req('/users'),
-  addUser:               (d)        => req('/users', { method:'POST', body:d }),
-  deleteUser:            (id)       => req('/users/'+id, { method:'DELETE' }),
-  getAnalytics:          ()         => req('/analytics'),
-  getInserviceFilters:   ()         => req('/inservice/filters'),
-  getPreserviceFilters:  ()         => req('/preservice/filters'),
-  getRecruitmentFilters: ()         => req('/recruitment/filters'),
-  getTaxiFilters:        ()         => req('/taxi/filters'),
-  getInservice:          (p={})     => req('/inservice?' + new URLSearchParams(p)),
-  addInservice:          (d)        => req('/inservice', { method:'POST', body:d }),
-  deleteInservice:       (id)       => req('/inservice/'+id, { method:'DELETE' }),
-  getPreservice:         (p={})     => req('/preservice?' + new URLSearchParams(p)),
-  addPreservice:         (d)        => req('/preservice', { method:'POST', body:d }),
-  deletePreservice:      (id)       => req('/preservice/'+id, { method:'DELETE' }),
-  getRecruitment:        (p={})     => req('/recruitment?' + new URLSearchParams(p)),
-  addRecruitment:        (d)        => req('/recruitment', { method:'POST', body:d }),
-  deleteRecruitment:     (id)       => req('/recruitment/'+id, { method:'DELETE' }),
-  getTaxi:               (p={})     => req('/taxi?' + new URLSearchParams(p)),
-  addTaxi:               (d)        => req('/taxi', { method:'POST', body:d }),
-  deleteTaxi:            (id)       => req('/taxi/'+id, { method:'DELETE' }),
-  getSBDrivers:          (p={})     => req('/schoolbus/drivers?' + new URLSearchParams(p)),
-  getSBSupervisors:      (p={})     => req('/schoolbus/supervisors?' + new URLSearchParams(p)),
+  // Auth
+  login:                 (u,p)  => req('/auth/login', { method:'POST', body:{ username:u, password:p } }),
+
+  // Users
+  getUsers:              ()     => req('/users'),
+  addUser:               (d)    => req('/users', { method:'POST', body:d }),
+  deleteUser:            (id)   => req('/users/'+id, { method:'DELETE' }),
+
+  // Analytics
+  getAnalytics:          ()     => req('/analytics'),
+
+  // Filters
+  getInserviceFilters:   ()     => req('/inservice/filters'),
+  getPreserviceFilters:  ()     => req('/preservice/filters'),
+  getRecruitmentFilters: ()     => req('/recruitment/filters'),
+  getTaxiFilters:        ()     => req('/taxi/filters'),
+  getSchoolBusFilters:   ()     => req('/schoolbus/filters'),
+
+  // In-Service
+  getInservice:          (p={}) => req('/inservice?' + new URLSearchParams(p)),
+  addInservice:          (d)    => req('/inservice', { method:'POST', body:d }),
+  deleteInservice:       (id)   => req('/inservice/'+id, { method:'DELETE' }),
+
+  // Pre-Service
+  getPreservice:         (p={}) => req('/preservice?' + new URLSearchParams(p)),
+  addPreservice:         (d)    => req('/preservice', { method:'POST', body:d }),
+  deletePreservice:      (id)   => req('/preservice/'+id, { method:'DELETE' }),
+
+  // Recruitment
+  getRecruitment:        (p={}) => req('/recruitment?' + new URLSearchParams(p)),
+  addRecruitment:        (d)    => req('/recruitment', { method:'POST', body:d }),
+  deleteRecruitment:     (id)   => req('/recruitment/'+id, { method:'DELETE' }),
+
+  // Taxi & Limousine
+  getTaxi:               (p={}) => req('/taxi?' + new URLSearchParams(p)),
+  addTaxi:               (d)    => req('/taxi', { method:'POST', body:d }),
+  deleteTaxi:            (id)   => req('/taxi/'+id, { method:'DELETE' }),
+
+  // School Bus
+  getSchoolBus:          (p={}) => req('/schoolbus?' + new URLSearchParams(p)),
+  deleteSchoolBus:       (id)   => req('/schoolbus/'+id, { method:'DELETE' }),
+
+  // CSV Upload
   uploadCSV:             (type,csv) => req('/upload/csv', { method:'POST', body:{ type, csvData:csv } }),
 }

@@ -1,13 +1,4 @@
-// This script reads Excel files directly and uploads to dashboard
-// Run this instead of watcher.js for Excel files
-
-import { readFile } from 'fs/promises'
 import { watch } from 'fs'
-
-const XLSX = await import('./node_modules/xlsx/xlsx.mjs').catch(() => {
-  const { default: x } = require('./node_modules/xlsx')
-  return { default: x }
-})
 
 const API_URL  = 'https://bus-training-api.onrender.com'
 const USERNAME = 'admin'
@@ -15,28 +6,34 @@ const PASSWORD = 'admin123'
 
 const WATCH_FILES = [
   {
-    path: 'D:\\PBI\\In service power BI project.xlsx',
-    type: 'inservice',
-    sheet: 0,
+    path:      'D:\\PBI\\In service power BI project.xlsx',
+    type:      'inservice',
+    sheet:     0,
     headerRow: 0
   },
   {
-    path: 'D:\\PBI\\Pre service PBI.xlsx',
-    type: 'preservice',
-    sheet: 0,
+    path:      'D:\\PBI\\Pre service PBI.xlsx',
+    type:      'preservice',
+    sheet:     0,
     headerRow: 0
   },
   {
-    path: 'D:\\PBI\\Recruitment_PB_PowerBI_Ready_2025.xlsx',
-    type: 'recruitment',
-    sheet: '🧹 Recruitment_Clean',
+    path:      'D:\\PBI\\Update version PBI\\Recruitment_Master.xlsx',
+    type:      'recruitment',
+    sheet:     '🧹 Recruitment_Clean',
     headerRow: 1
   },
   {
-    path: 'D:\\PBI\\Update version PBI\\Taxi_Limousine_Cleaned_PBI.xlsx',
-    type: 'taxi',
-    sheet: 0,
+    path:      'D:\\PBI\\Update version PBI\\Taxi_Limousine_Cleaned_PBI.xlsx',
+    type:      'taxi',
+    sheet:     'Cleaned Data',
     headerRow: 0
+  },
+  {
+    path:      'D:\\PBI\\Update version PBI\\School Bus _ master.xlsx',
+    type:      'schoolbus',
+    sheet:     'Consolidated Data',
+    headerRow: 1
   },
 ]
 
@@ -61,7 +58,7 @@ function readExcel(filePath, sheetIndex, headerRow) {
   const ws = typeof sheetIndex === 'string'
     ? wb.Sheets[sheetIndex]
     : wb.Sheets[wb.SheetNames[sheetIndex]]
-  const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null })
+  const allRows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null })
   const headers = allRows[headerRow]
   const dataRows = allRows.slice(headerRow + 1).filter(r => r.some(v => v !== null && v !== ''))
   return { headers, dataRows }
@@ -90,108 +87,120 @@ function formatDate(val) {
 
 function mapRow(type, headers, row) {
   const r = {}
-  headers.forEach((h, i) => { if (h) r[h] = row[i] })
+  headers.forEach((h, i) => { if (h) r[h.toString().trim()] = row[i] })
 
   if (type === 'inservice') return {
-    sl:            parseInt(r['SL']) || null,
+    sl:            parseInt(r['SL'])||null,
     training_date: formatDate(r['Training Date']),
-    staff_id:      r['Staff ID']?.toString().trim() || null,
-    driver_name:   r['Driver Name']?.toString().trim() || null,
-    nationality:   r['Nationality']?.toString().trim() || null,
-    depot:         r['Depot']?.toString().trim() || null,
-    training_type: r['Type of Training']?.toString().trim() || null,
-    course_name:   r['Training Course Name']?.toString().trim() || null,
-    duration:      r['Duration']?.toString().trim() || null,
-    trainer:       r['Trainer']?.toString().trim() || null,
-    attendance:    r['Attendance']?.toString().trim() || null,
+    staff_id:      r['Staff ID']?.toString().trim()||null,
+    driver_name:   r['Driver Name']?.toString().trim()||null,
+    nationality:   r['Nationality']?.toString().trim()||null,
+    depot:         r['Depot']?.toString().trim()||null,
+    training_type: r['Type of Training']?.toString().trim()||null,
+    course_name:   r['Training Course Name']?.toString().trim()||null,
+    duration:      r['Duration']?.toString().trim()||null,
+    trainer:       r['Trainer']?.toString().trim()||null,
+    attendance:    r['Attendance']?.toString().trim()||null,
   }
 
   if (type === 'preservice') return {
-    sl:                       parseInt(r['SL']) || null,
-    rta_id:                   r['RTA ID ']?.toString().trim() || r['RTA ID']?.toString().trim() || null,
-    license_no:               r['License No.']?.toString().trim() || null,
-    driver_name:              r['Driver Name']?.toString().trim() || null,
-    nationality:              r['Nationality']?.toString().trim() || null,
+    sl:                       parseInt(r['SL'])||null,
+    rta_id:                   r['RTA ID ']?.toString().trim()||r['RTA ID']?.toString().trim()||null,
+    license_no:               r['License No.']?.toString().trim()||null,
+    driver_name:              r['Driver Name']?.toString().trim()||null,
+    nationality:              r['Nationality']?.toString().trim()||null,
     dob:                      formatDate(r['DOB']),
     license_issued:           formatDate(r['Date of issued']),
     license_expired:          formatDate(r['Date of expired']),
-    place_of_issue:           r['Place of issue']?.toString().trim() || null,
-    traffic_file:             r['Traffic file no']?.toString().trim() || null,
-    contact:                  r['Contact']?.toString().trim() || null,
-    age:                      parseFloat(r['Age']) || null,
-    company:                  r['Company']?.toString().trim() || null,
+    place_of_issue:           r['Place of issue']?.toString().trim()||null,
+    traffic_file:             r['Traffic file no']?.toString().trim()||null,
+    contact:                  r['Contact']?.toString().trim()||null,
+    age:                      parseFloat(r['Age'])||null,
+    company:                  r['Company']?.toString().trim()||null,
     road_test_date:           formatDate(r['Date of Road test']),
-    trainer_name:             r['Name of Trainer']?.toString().trim() || null,
+    trainer_name:             r['Name of Trainer']?.toString().trim()||null,
     interview_date:           formatDate(r['Date of Interview']),
-    mode_of_hire:             r['Mode of Hire']?.toString().trim() || null,
-    payment_date:             formatDate(r['Payment Date']),
-    sales_order:              r['Sales Order #']?.toString().trim() || null,
-    revenue:                  r['Revenue']?.toString().trim() || null,
     join_date:                formatDate(r['Join Date']),
-    training_batch:           r['Training Batch']?.toString().trim() || null,
-    trainer_classroom:        r['Name of trainer -  Class Room']?.toString().trim() || null,
-    trainer_wheel:            r['Name of Trainer - Behind the wheel']?.toString().trim() || null,
+    training_batch:           r['Training Batch']?.toString().trim()||null,
+    trainer_classroom:        r['Name of trainer -  Class Room']?.toString().trim()||null,
+    trainer_wheel:            r['Name of Trainer - Behind the wheel']?.toString().trim()||null,
     post_etest_date:          formatDate(r['Date of Post e test']),
-    post_etest_result:        r[' Post E test']?.toString().trim() || null,
+    post_etest_result:        r[' Post E test']?.toString().trim()||r['Post E test']?.toString().trim()||null,
     occ_date:                 formatDate(r['Date of OCC']),
-    occ_result:               r['OCC']?.toString().trim() || null,
+    occ_result:               r['OCC']?.toString().trim()||null,
     training_date:            formatDate(r['Date']),
-    fire_fighting:            r['Fire Fighting']?.toString().trim() || null,
+    fire_fighting:            r['Fire Fighting']?.toString().trim()||null,
     road_assessment_date:     formatDate(r['Date of Road Asssesment']),
-    final_assessment_trainer: r['Final Asssement Trainer']?.toString().trim() || null,
-    final_assessment:         r['Final assesment']?.toString().trim() || null,
+    final_assessment_trainer: r['Final Asssement Trainer']?.toString().trim()||null,
+    final_assessment:         r['Final assesment']?.toString().trim()||null,
     scenario_date:            formatDate(r['Date of Scenario']),
-    scenario_result:          r['Scenario Result']?.toString().trim() || null,
+    scenario_result:          r['Scenario Result']?.toString().trim()||null,
     graduation_date:          formatDate(r['Graduation date']),
-    number_of_days:           parseInt(r['Number of Days']) || null,
+    number_of_days:           parseInt(r['Number of Days'])||null,
     transfer_date:            formatDate(r['Date of transfer operation ']),
-    status:                   r['Status']?.toString().trim() || null,
-    notes:                    r['Additional notes Regarding training']?.toString().trim() || null,
-    weekly_report:            r['weekly Report']?.toString().trim() || null,
-    weekly_report2:           r['weekly Report 2']?.toString().trim() || null,
+    status:                   r['Status']?.toString().trim()||null,
+    notes:                    r['Additional notes Regarding training']?.toString().trim()||null,
+    weekly_report:            r['weekly Report']?.toString().trim()||null,
+    weekly_report2:           r['weekly Report 2']?.toString().trim()||null,
   }
 
   if (type === 'recruitment') return {
-    sl:               parseInt(r['SL']) || null,
-    rta_id:           r['RTA ID']?.toString().trim() || null,
-    license_no:       r['License No.']?.toString().trim() || null,
-    full_name:        r['Name as per Driving License']?.toString().trim() || null,
-    nationality:      r['Nationality']?.toString().trim() || null,
+    sl:               parseInt(r['SL'])||null,
+    rta_id:           r['RTA ID']?.toString().trim()||null,
+    license_no:       r['License No.']?.toString().trim()||null,
+    full_name:        r['Name as per Driving License']?.toString().trim()||null,
+    nationality:      r['Nationality']?.toString().trim()||null,
     dob:              formatDate(r['DOB']),
-    age:              parseFloat(r['Age']) || null,
+    age:              parseFloat(r['Age'])||null,
     license_issued:   formatDate(r['Date of issued']),
     license_expired:  formatDate(r['Date of expired']),
-    place_of_issue:   r['Place of issue']?.toString().trim() || null,
-    license_class:    r['Class of License']?.toString().trim() || null,
-    traffic_file:     r['Traffic file no']?.toString().trim() || null,
-    contact:          r['Contact']?.toString().trim() || null,
-    company:          r['Company']?.toString().trim() || null,
+    place_of_issue:   r['Place of issue']?.toString().trim()||null,
+    license_class:    r['Class of License']?.toString().trim()||null,
+    traffic_file:     r['Traffic file no']?.toString().trim()||null,
+    contact:          r['Contact']?.toString().trim()||null,
+    company:          r['Company']?.toString().trim()||null,
     road_test_date:   formatDate(r['Date of Road test']),
-    road_test_result: r['Road Test Result']?.toString().trim() || null,
+    road_test_result: r['Road Test Result']?.toString().trim()||null,
     interview_date:   formatDate(r['Date of Interview']),
-    interview_result: r['Interview Result']?.toString().trim() || null,
-    status:           r['Status 1']?.toString().trim() || null,
-    remarks:          r['Remarks']?.toString().trim() || null,
-    training_batch:   r['Training Batch']?.toString().trim() || null,
+    interview_result: r['Interview Result']?.toString().trim()||null,
+    status:           r['Status 1']?.toString().trim()||null,
+    remarks:          r['Remarks']?.toString().trim()||null,
+    training_batch:   r['Training Batch']?.toString().trim()||null,
     training_start:   formatDate(r['Date of join Training']),
     graduation_date:  formatDate(r['Date of Graduation']),
     transfer_date:    formatDate(r['Date of Transfer operation']),
   }
 
   if (type === 'taxi') return {
-    sl:             parseInt(r['SL']) || null,
-    license:        r['License']?.toString().trim() || null,
-    full_name:      r['Name']?.toString().trim() || null,
-    nationality:    r['Nationality']?.toString().trim() || null,
-    franchise:      r['Franchise/Limousine']?.toString().trim() || null,
-    traffic_file:   r['Traffic File']?.toString().trim() || null,
-    company:        r['Company']?.toString().trim() || null,
-    institute:      r['Institute']?.toString().trim() || null,
-    training_type:  r['Training Type']?.toString().trim() || null,
+    sl:             parseInt(r['SL'])||null,
+    license:        r['License']?.toString().trim()||null,
+    full_name:      r['Name']?.toString().trim()||null,
+    nationality:    r['Nationality']?.toString().trim()||null,
+    franchise:      r['Franchise/Limousine']?.toString().trim()||null,
+    traffic_file:   r['Traffic File']?.toString().trim()||null,
+    company:        r['Company']?.toString().trim()||null,
+    institute:      r['Institute']?.toString().trim()||null,
+    training_type:  r['Training Type']?.toString().trim()||null,
     apply_date:     formatDate(r['Apply Date']),
     training_start: formatDate(r['Training Start']),
     training_end:   formatDate(r['Training End']),
-    attendance:     r['Attendance']?.toString().trim() || null,
+    attendance:     r['Attendance']?.toString().trim()||null,
+  }
+
+  if (type === 'schoolbus') return {
+    sl:            parseInt(r['SL'])||null,
+    training_date: formatDate(r['Training Date']),
+    traffic_file:  r[' Traffic File Number']?.toString().trim()||null,
+    arabic_name:   r['Arabic Name']?.toString().trim()||null,
+    full_name:     r['Name']?.toString().trim()||null,
+    nationality:   r['Nationality']?.toString().trim()||null,
+    course:        r['Course']?.toString().trim()||null,
+    course_type:   r['Course Type']?.toString().trim()||null,
+    role:          r['Role']?.toString().trim()||null,
+    status:        r['Status']?.toString().trim()||null,
+    trainer:       r['Trainer']?.toString().trim()||null,
+    establishment: r['Establishment']?.toString().trim()||null,
+    remarks:       r['Remarks']?.toString().trim()||null,
   }
 
   return null
@@ -217,25 +226,23 @@ async function processFile(filePath, type, sheetIndex, headerRow) {
     const { headers, dataRows } = readExcel(filePath, sheetIndex, headerRow)
     console.log(`  ${dataRows.length} rows found`)
 
+    const totalChunks = Math.ceil(dataRows.length / CHUNK_SIZE)
     let inserted = 0, skipped = 0
 
-    const totalChunks = Math.ceil(dataRows.length / CHUNK_SIZE)
-
     for (let i = 0; i < dataRows.length; i += CHUNK_SIZE) {
-      const chunkIndex = Math.floor(i / CHUNK_SIZE)
+      const chunkIndex   = Math.floor(i / CHUNK_SIZE)
       const isFirstChunk = chunkIndex === 0
       const isFinalChunk = chunkIndex === totalChunks - 1
-      const chunk = dataRows.slice(i, i + CHUNK_SIZE)
+      const chunk  = dataRows.slice(i, i + CHUNK_SIZE)
       const mapped = chunk.map(row => mapRow(type, headers, row)).filter(r => r !== null)
       const result = await uploadBatch(type, mapped, isFirstChunk, isFinalChunk)
       if (result?.ok) {
         inserted += result.inserted
-        skipped += result.skipped
+        skipped  += result.skipped
         process.stdout.write('.')
       }
       await new Promise(r => setTimeout(r, 200))
     }
-
     console.log(`\n  DONE: ${inserted} inserted, ${skipped} skipped`)
   } catch(e) {
     console.error(`  ERROR: ${e.message}`)
@@ -254,13 +261,15 @@ async function start() {
   console.log('Bus Training Dashboard — Excel Auto-Sync')
   console.log('==========================================')
   await login()
-
   console.log('\nWatching Excel files:')
   WATCH_FILES.forEach(file => {
     console.log(`  [${file.type}] ${file.path}`)
-    watch(file.path, () => handleChange(file))
+    try {
+      watch(file.path, () => handleChange(file))
+    } catch(e) {
+      console.log(`  WARNING: Cannot watch ${file.path} — file may not exist yet`)
+    }
   })
-
   console.log('\nReady! Edit any Excel file and save — dashboard updates automatically.\n')
 }
 

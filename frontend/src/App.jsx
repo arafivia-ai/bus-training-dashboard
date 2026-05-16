@@ -8,6 +8,7 @@ import InService   from './pages/InService'
 import PreService  from './pages/PreService'
 import Recruitment from './pages/Recruitment'
 import Taxi        from './pages/Taxi'
+import SchoolBus   from './pages/SchoolBus'
 import Analytics   from './pages/Analytics'
 import Settings    from './pages/Settings'
 
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="preservice"   element={<PreService />} />
           <Route path="recruitment"  element={<Recruitment />} />
           <Route path="taxi"         element={<Taxi />} />
+          <Route path="schoolbus"    element={<SchoolBus />} />
           <Route path="analytics"    element={<Analytics />} />
           <Route path="settings"     element={<Settings />} />
         </Route>

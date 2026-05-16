@@ -363,6 +363,7 @@ app.get('/api/analytics', auth, async (req, res) => {
       psFinal, psScenario, psEtest, psOcc, psFire,
       recStatus, recCompany, recNat, recRoad,
       taxiCompany, taxiType, taxiAtt, taxiFranchise,
+      sbCount, sbEstablishment, sbCourseType, sbRole, sbStatus, sbTrend,
     ] = await Promise.all([
       supabase.from('public_bus_inservice').select('id', { count:'exact', head:true }).eq('is_deleted', false),
       supabase.from('public_bus_preservice').select('id', { count:'exact', head:true }).eq('is_deleted', false),
@@ -390,6 +391,12 @@ app.get('/api/analytics', auth, async (req, res) => {
       supabase.from('taxi_limousine').select('training_type').eq('is_deleted', false),
       supabase.from('taxi_limousine').select('attendance').eq('is_deleted', false),
       supabase.from('taxi_limousine').select('franchise').eq('is_deleted', false),
+      supabase.from('school_bus').select('id', { count:'exact', head:true }).eq('is_deleted', false),
+      supabase.from('school_bus').select('establishment').eq('is_deleted', false),
+      supabase.from('school_bus').select('course_type').eq('is_deleted', false),
+      supabase.from('school_bus').select('role').eq('is_deleted', false),
+      supabase.from('school_bus').select('status').eq('is_deleted', false),
+      supabase.from('school_bus').select('training_date').eq('is_deleted', false).not('training_date','is',null),
     ])
 
     res.json({
@@ -428,6 +435,14 @@ app.get('/api/analytics', auth, async (req, res) => {
         byType:         countBy(taxiType, 'training_type'),
         byFranchise:    countBy(taxiFranchise, 'franchise'),
         byAttendance:   countBy(taxiAtt, 'attendance'),
+      },
+      schoolbus: {
+        total:           sbCount.count || 0,
+        byEstablishment: countBy(sbEstablishment, 'establishment'),
+        byCourseType:    countBy(sbCourseType, 'course_type'),
+        byRole:          countBy(sbRole, 'role'),
+        byStatus:        countBy(sbStatus, 'status'),
+        trend:           trend(sbTrend, 'training_date'),
       },
     })
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }) }
@@ -633,6 +648,7 @@ app.post('/api/upload/excel', auth, adminOnly, async (req, res) => {
       preservice:  'public_bus_preservice',
       recruitment: 'recruitment',
       taxi:        'taxi_limousine',
+      schoolbus:   'school_bus',
     }
     const table = tableMap[type]
     if (!table) return res.status(400).json({ error: 'Invalid type' })
@@ -648,6 +664,52 @@ app.post('/api/upload/excel', auth, adminOnly, async (req, res) => {
     }
     res.json({ ok:true, inserted, skipped, total:rows.length })
   } catch(err) { res.status(500).json({ error: err.message }) }
+})
+// SCHOOL BUS
+app.get('/api/schoolbus/filters', auth, async (req, res) => {
+  try {
+    const [establishments, courses, roles, nats, statuses] = await Promise.all([
+      supabase.from('school_bus').select('establishment').eq('is_deleted', false),
+      supabase.from('school_bus').select('course').eq('is_deleted', false),
+      supabase.from('school_bus').select('role').eq('is_deleted', false),
+      supabase.from('school_bus').select('nationality').eq('is_deleted', false),
+      supabase.from('school_bus').select('status').eq('is_deleted', false),
+    ])
+    const unique = (arr, key) => [...new Set((arr.data||[]).map(r => r[key]).filter(Boolean))].sort()
+    res.json({
+      establishments: unique(establishments, 'establishment'),
+      courses:        unique(courses, 'course'),
+      roles:          unique(roles, 'role'),
+      nationalities:  unique(nats, 'nationality'),
+      statuses:       unique(statuses, 'status'),
+    })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+app.get('/api/schoolbus', auth, async (req, res) => {
+  try {
+    const { establishment, course, role, nationality, status, from, to, page=1, limit=100 } = req.query
+    let query = supabase.from('school_bus').select('*', { count:'exact' }).eq('is_deleted', false)
+    if (establishment) query = query.eq('establishment', establishment)
+    if (course)        query = query.eq('course', course)
+    if (role)          query = query.eq('role', role)
+    if (nationality)   query = query.eq('nationality', nationality)
+    if (status)        query = query.eq('status', status)
+    if (from)          query = query.gte('training_date', from)
+    if (to)            query = query.lte('training_date', to)
+    const offset = (parseInt(page)-1)*parseInt(limit)
+    query = query.order('training_date', { ascending:false }).range(offset, offset+parseInt(limit)-1)
+    const { data, error, count } = await query
+    if (error) return res.status(500).json({ error: error.message })
+    res.json({ data, total: count, page: parseInt(page) })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+app.delete('/api/schoolbus/:id', auth, adminOnly, async (req, res) => {
+  try {
+    await supabase.from('school_bus').update({ is_deleted:true }).eq('id', req.params.id)
+    res.json({ ok: true })
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
 const PORT = process.env.PORT || 3001
