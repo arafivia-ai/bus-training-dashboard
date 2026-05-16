@@ -17,5 +17,4 @@ export const useStore = create((set, get) => ({
   },
 
   isAdmin: () => get().user?.role === 'Administrator',
-  setAnalytics: (data) => set({ analytics: data }),
 }))

@@ -7,13 +7,10 @@ import './index.css'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
-    <Toaster
-      position="bottom-right"
-      toastOptions={{
-        style: { background: '#0f2044', color: '#fff', fontSize: '13px', borderRadius: '8px' },
-        success: { style: { background: '#166534' } },
-        error:   { style: { background: '#991b1b' } },
-      }}
-    />
+    <Toaster position="top-right" toastOptions={{
+      style: { fontSize: '13px', borderRadius: '10px' },
+      success: { style: { background: '#ecfdf5', color: '#065f46', border: '1px solid #6ee7b7' }},
+      error: { style: { background: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5' }},
+    }}/>
   </React.StrictMode>
 )

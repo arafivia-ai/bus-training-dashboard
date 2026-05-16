@@ -2,61 +2,107 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { api } from '../api'
-import { Bus, BookOpen, UserCheck, Users, School, BarChart3 } from 'lucide-react'
-
-const MODULES = [
-  { to:'/inservice',      mc:'#1d4ed8', bg:'#eff6ff', title:'In-Service Training',    desc:'Public bus driver in-service training records with attendance tracking.',      lbl:'Records',    icon:<Bus size={20}/> },
-  { to:'/preservice',     mc:'#059669', bg:'#f0fdf4', title:'Pre-Service Training',   desc:'Bus familiarisation, route familiarisation and tourism training records.',      lbl:'Records',    icon:<BookOpen size={20}/> },
-  { to:'/recruitment',    mc:'#d97706', bg:'#fffbeb', title:'Recruitment Pipeline',   desc:'Candidate tracking, road test results, interview outcomes and onboarding.',     lbl:'Candidates', icon:<UserCheck size={20}/> },
-  { to:'/sb-drivers',     mc:'#7c3aed', bg:'#f5f3ff', title:'SB Driver Training',     desc:'School bus driver training records, attendance and course completion.',         lbl:'Records',    icon:<Users size={20}/> },
-  { to:'/sb-supervisors', mc:'#0891b2', bg:'#ecfeff', title:'SB Supervisor Training', desc:'School bus supervisor training records and certification tracking.',            lbl:'Records',    icon:<School size={20}/> },
-  { to:'/analytics',      mc:'#dc2626', bg:'#fef2f2', title:'Analytics & Reports',    desc:'Trends, depot comparisons, attendance rates and exportable reports.',           lbl:'Modules',    icon:<BarChart3 size={20}/> },
-]
+import KPICard from '../components/Charts/KPICard'
+import BarChartBox from '../components/Charts/BarChartBox'
+import DonutChartBox from '../components/Charts/DonutChartBox'
+import LineChartBox from '../components/Charts/LineChartBox'
+import { Bus, BookOpen, UserCheck, Car, TrendingUp, Users } from 'lucide-react'
 
 export default function Home() {
   const { user } = useStore()
   const navigate = useNavigate()
   const [analytics, setAnalytics] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => { api.getAnalytics().then(setAnalytics).catch(()=>{}) }, [])
+  useEffect(() => {
+    api.getAnalytics()
+      .then(setAnalytics)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
   const h = new Date().getHours()
-  const greeting = h<12?'Good morning':h<17?'Good afternoon':'Good evening'
-  const counts = [
-    analytics?.inservice?.total||0,
-    analytics?.preservice?.total||0,
-    analytics?.recruitment?.total||0,
-    analytics?.schoolDrivers?.total||0,
-    analytics?.schoolSupervisors?.total||0,
-    6,
+  const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
+
+  const modules = [
+    { to: '/inservice',   label: 'In-Service Training',  icon: Bus,       color: 'blue',   total: analytics?.inservice?.total },
+    { to: '/preservice',  label: 'Pre-Service Training', icon: BookOpen,  color: 'green',  total: analytics?.preservice?.total },
+    { to: '/recruitment', label: 'Recruitment Pipeline', icon: UserCheck, color: 'amber',  total: analytics?.recruitment?.total },
+    { to: '/taxi',        label: 'Taxi & Limousine',     icon: Car,       color: 'purple', total: analytics?.taxi?.total },
   ]
 
+  // Prepare chart data
+  const depotData = Object.entries(analytics?.inservice?.byDepot || {})
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value).slice(0, 8)
+
+  const attendanceData = Object.entries(analytics?.inservice?.byAttendance || {})
+    .map(([name, value]) => ({ name, value }))
+
+  const recruitmentData = Object.entries(analytics?.recruitment?.byStatus || {})
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+
+  const trendData = Object.entries(analytics?.inservice?.trend || {})
+    .map(([name, value]) => ({ name: name.slice(5), value }))
+    .slice(-12)
+
   return (
-    <div className="page-body">
-      <div className="hero">
-        <div className="hero-greeting">{greeting}, {user?.username}</div>
-        <div className="hero-title">Bus Training Dashboard</div>
-        <div className="hero-sub">Centralised management for Public Bus and School Bus driver training, recruitment and compliance.</div>
-        <div className="hero-kpis">
-          {[['In-Service',analytics?.inservice?.total||0],['Pre-Service',analytics?.preservice?.total||0],['Recruitment',analytics?.recruitment?.total||0],['SB Drivers',analytics?.schoolDrivers?.total||0],['SB Supervisors',analytics?.schoolSupervisors?.total||0]].map(([l,v])=>(
-            <div key={l}><div className="hkpi-val">{Number(v).toLocaleString()}</div><div className="hkpi-lbl">{l}</div></div>
-          ))}
-        </div>
+    <div className="space-y-6">
+      {/* Welcome */}
+      <div className="bg-gradient-to-r from-primary-900 to-primary-700 rounded-2xl p-6 text-white">
+        <div className="text-sm text-primary-300 mb-1">{greeting}, {user?.username}</div>
+        <h1 className="text-2xl font-800 mb-1">Bus Training Dashboard</h1>
+        <p className="text-primary-300 text-sm">
+          Centralised operations management for all training modules
+        </p>
       </div>
-      <div style={{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1,color:'#94a3b8'}}>Select a Module</div>
-      <div className="module-grid">
-        {MODULES.map((m,i)=>(
-          <div key={m.to} className="mc" style={{'--mc':m.mc,'--mc-bg':m.bg}} onClick={()=>navigate(m.to)}>
-            <div className="mc-top"/>
-            <div className="mc-icon" style={{color:m.mc,background:m.bg}}>{m.icon}</div>
-            <div className="mc-title">{m.title}</div>
-            <div className="mc-desc">{m.desc}</div>
-            <div className="mc-footer">
-              <div><div className="mc-count">{counts[i].toLocaleString()}</div><div className="mc-lbl">{m.lbl}</div></div>
-              <div className="mc-arrow">›</div>
-            </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {modules.map(m => (
+          <div key={m.to} onClick={() => navigate(m.to)} className="cursor-pointer hover:scale-105 transition-transform">
+            <KPICard
+              label={m.label}
+              value={loading ? '...' : (m.total || 0)}
+              icon={m.icon}
+              color={m.color}
+              sub="Total records"
+            />
           </div>
         ))}
+      </div>
+
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <BarChartBox
+          title="Training Sessions by Depot"
+          sub="In-Service Training distribution"
+          data={depotData}
+          height={260}
+        />
+        <DonutChartBox
+          title="Attendance Overview"
+          sub="Present vs Absent — In-Service"
+          data={attendanceData}
+          height={260}
+        />
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <LineChartBox
+          title="Monthly Training Trend"
+          sub="In-Service sessions per month"
+          data={trendData}
+          height={220}
+        />
+        <DonutChartBox
+          title="Recruitment Pipeline"
+          sub="Candidates by current status"
+          data={recruitmentData}
+          height={220}
+        />
       </div>
     </div>
   )
