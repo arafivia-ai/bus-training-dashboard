@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 
 export default function KPICard({ label, value, sub, icon: Icon, color = 'blue', trend }) {
   const colors = {
@@ -19,14 +19,14 @@ export default function KPICard({ label, value, sub, icon: Icon, color = 'blue',
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-600 uppercase tracking-wide text-slate-500 mb-1">{label}</div>
-        <div className={`text-2xl font-800 ${c.val} leading-none`}>
+        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">{label}</div>
+        <div className={`text-2xl font-extrabold ${c.val} leading-none`}>
           {typeof value === 'number' ? value.toLocaleString() : value}
         </div>
         {sub && <div className="text-xs text-slate-400 mt-1">{sub}</div>}
         {trend !== undefined && (
-          <div className={`text-xs font-600 mt-1 ${trend >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-            {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% vs last month
+          <div className={`text-xs font-semibold mt-1 ${trend >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+            {trend >= 0 ? 'â†‘' : 'â†“'} {Math.abs(trend)}% vs last month
           </div>
         )}
       </div>

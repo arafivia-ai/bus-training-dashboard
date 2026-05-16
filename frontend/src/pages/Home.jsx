@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { api } from '../api'
@@ -52,7 +52,7 @@ export default function Home() {
       {/* Welcome */}
       <div className="bg-gradient-to-r from-primary-900 to-primary-700 rounded-2xl p-6 text-white">
         <div className="text-sm text-primary-300 mb-1">{greeting}, {user?.username}</div>
-        <h1 className="text-2xl font-800 mb-1">Bus Training Dashboard</h1>
+        <h1 className="text-2xl font-extrabold mb-1">Bus Training Dashboard</h1>
         <p className="text-primary-300 text-sm">
           Centralised operations management for all training modules
         </p>
@@ -83,7 +83,7 @@ export default function Home() {
         />
         <DonutChartBox
           title="Attendance Overview"
-          sub="Present vs Absent — In-Service"
+          sub="Present vs Absent â€” In-Service"
           data={attendanceData}
           height={260}
         />

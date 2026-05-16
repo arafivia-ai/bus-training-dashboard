@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+﻿import React, { useState, useEffect, useRef } from 'react'
 import { api } from '../api'
 import { useStore } from '../store'
 import toast from 'react-hot-toast'
@@ -84,7 +84,7 @@ export default function Taxi() {
   const columns = [
     { key: 'sl',             label: '#' },
     { key: 'license',        label: 'License' },
-    { key: 'full_name',      label: 'Name', render: v => <span className="font-500">{v || '--'}</span> },
+    { key: 'full_name',      label: 'Name', render: v => <span className="font-medium">{v || '--'}</span> },
     { key: 'nationality',    label: 'Nationality' },
     { key: 'franchise',      label: 'Franchise', render: v => v ? <span className="tag tag-purple">{v}</span> : '--' },
     { key: 'company',        label: 'Company', render: v => v ? <span className="tag tag-blue">{v}</span> : '--' },
@@ -107,7 +107,7 @@ export default function Taxi() {
             <Car size={20} className="text-purple-600"/>
           </div>
           <div>
-            <h1 className="text-lg font-700 text-slate-800">Taxi & Limousine Training</h1>
+            <h1 className="text-lg font-bold text-slate-800">Taxi & Limousine Training</h1>
             <p className="text-xs text-slate-400">{(analytics?.total || 0).toLocaleString()} total records</p>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default function Taxi() {
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-500 transition-all ${tab === t ? 'bg-white text-primary-700 shadow-sm font-600' : 'text-slate-500 hover:text-slate-700'}`}>
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${tab === t ? 'bg-white text-primary-700 shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'}`}>
             {t}
           </button>
         ))}
@@ -157,14 +157,14 @@ export default function Taxi() {
       {tab === 'Records' && (
         <div className="card">
           <div className="p-4 border-b border-slate-100 space-y-3">
-            <div className="text-sm font-600 text-slate-700">
+            <div className="text-sm font-semibold text-slate-700">
               Taxi & Limousine Records <span className="text-primary-600 ml-2">{total.toLocaleString()}</span>
             </div>
             <FilterBar filters={filters} filterOpts={filterOptions} onFilter={applyFilter}
               onReset={() => { setFilters({}); loadRecords(1, {}) }} search={search} onSearch={setSearch}/>
           </div>
           <DataTable columns={columns} rows={filtered} loading={loading} page={page}
-            total={total} limit={LIMIT} onPage={p => loadRecords(p)} emptyIcon="🚕" emptyText="No taxi records found"/>
+            total={total} limit={LIMIT} onPage={p => loadRecords(p)} emptyIcon="ðŸš•" emptyText="No taxi records found"/>
         </div>
       )}
     </div>

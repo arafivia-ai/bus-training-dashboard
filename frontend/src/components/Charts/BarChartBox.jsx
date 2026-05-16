@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, LabelList
@@ -9,7 +9,7 @@ const COLORS = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#be
 export default function BarChartBox({ title, sub, data, dataKey = 'value', nameKey = 'name', height = 260, horiz = false, color }) {
   if (!data?.length) return (
     <div className="card p-5">
-      <div className="text-sm font-600 text-slate-700 mb-1">{title}</div>
+      <div className="text-sm font-semibold text-slate-700 mb-1">{title}</div>
       {sub && <div className="text-xs text-slate-400 mb-4">{sub}</div>}
       <div className="flex items-center justify-center h-40 text-slate-300 text-sm">No data available</div>
     </div>
@@ -17,7 +17,7 @@ export default function BarChartBox({ title, sub, data, dataKey = 'value', nameK
 
   return (
     <div className="card p-5">
-      <div className="text-sm font-600 text-slate-700 mb-1">{title}</div>
+      <div className="text-sm font-semibold text-slate-700 mb-1">{title}</div>
       {sub && <div className="text-xs text-slate-400 mb-4">{sub}</div>}
       <ResponsiveContainer width="100%" height={height}>
         <BarChart

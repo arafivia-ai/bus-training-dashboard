@@ -93,7 +93,7 @@ export default function PreService() {
   const columns = [
     { key: 'sl',              label: '#' },
     { key: 'rta_id',          label: 'RTA ID' },
-    { key: 'driver_name',     label: 'Name', render: v => <span className="font-500">{v || '--'}</span> },
+    { key: 'driver_name',     label: 'Name', render: v => <span className="font-medium">{v || '--'}</span> },
     { key: 'nationality',     label: 'Nationality' },
     { key: 'company',         label: 'Company', render: v => v ? <span className="tag tag-blue">{v}</span> : '--' },
     { key: 'training_batch',  label: 'Batch' },
@@ -117,7 +117,7 @@ export default function PreService() {
             <BookOpen size={20} className="text-emerald-600"/>
           </div>
           <div>
-            <h1 className="text-lg font-700 text-slate-800">Pre-Service Training</h1>
+            <h1 className="text-lg font-bold text-slate-800">Pre-Service Training</h1>
             <p className="text-xs text-slate-400">{(analytics?.total || 0).toLocaleString()} total candidates</p>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function PreService() {
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-500 transition-all ${tab === t ? 'bg-white text-primary-700 shadow-sm font-600' : 'text-slate-500 hover:text-slate-700'}`}>
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${tab === t ? 'bg-white text-primary-700 shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'}`}>
             {t}
           </button>
         ))}
@@ -151,13 +151,13 @@ export default function PreService() {
 
           {/* Pass rate bars */}
           <div className="card p-5">
-            <div className="text-sm font-600 text-slate-700 mb-4">Training Stage Pass Rates</div>
+            <div className="text-sm font-semibold text-slate-700 mb-4">Training Stage Pass Rates</div>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {passRates.map(({ name, value }) => (
                 <div key={name} className="space-y-1.5">
                   <div className="flex justify-between text-xs">
-                    <span className="text-slate-600 font-500">{name}</span>
-                    <span className={`font-700 ${value >= 70 ? 'text-emerald-600' : value >= 50 ? 'text-amber-600' : 'text-red-500'}`}>{value}%</span>
+                    <span className="text-slate-600 font-medium">{name}</span>
+                    <span className={`font-bold ${value >= 70 ? 'text-emerald-600' : value >= 50 ? 'text-amber-600' : 'text-red-500'}`}>{value}%</span>
                   </div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
@@ -187,7 +187,7 @@ export default function PreService() {
       {tab === 'Records' && (
         <div className="card">
           <div className="p-4 border-b border-slate-100 space-y-3">
-            <div className="text-sm font-600 text-slate-700">
+            <div className="text-sm font-semibold text-slate-700">
               Pre-Service Records <span className="text-primary-600 ml-2">{total.toLocaleString()}</span>
             </div>
             <FilterBar filters={filters} filterOpts={filterOptions} onFilter={applyFilter}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { api } from '../api'
@@ -37,13 +37,13 @@ export default function Login() {
             <Bus size={20} className="text-white"/>
           </div>
           <div>
-            <div className="font-700 text-base">Bus Training Dashboard</div>
+            <div className="font-bold text-base">Bus Training Dashboard</div>
             <div className="text-xs text-primary-400">Operations Management System</div>
           </div>
         </div>
 
         <div>
-          <h1 className="text-4xl font-800 leading-tight mb-4">
+          <h1 className="text-4xl font-extrabold leading-tight mb-4">
             Manage training.<br/>
             Track recruitment.<br/>
             <span className="text-primary-300">All in one place.</span>
@@ -62,7 +62,7 @@ export default function Login() {
             ['98K+', 'Taxi & Limousine'],
           ].map(([v, l]) => (
             <div key={l} className="bg-primary-800 rounded-xl p-4">
-              <div className="text-2xl font-800 text-white">{v}</div>
+              <div className="text-2xl font-extrabold text-white">{v}</div>
               <div className="text-xs text-primary-400 mt-1">{l}</div>
             </div>
           ))}
@@ -76,10 +76,10 @@ export default function Login() {
             <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
               <Bus size={20} className="text-white"/>
             </div>
-            <div className="font-700 text-primary-900">Bus Training Dashboard</div>
+            <div className="font-bold text-primary-900">Bus Training Dashboard</div>
           </div>
 
-          <h2 className="text-2xl font-800 text-slate-900 mb-1">Welcome back</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900 mb-1">Welcome back</h2>
           <p className="text-sm text-slate-500 mb-8">Sign in to access the dashboard</p>
 
           {error && (
@@ -90,7 +90,7 @@ export default function Login() {
 
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="block text-xs font-600 text-slate-600 uppercase tracking-wide mb-1.5">Username</label>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Username</label>
               <input
                 className="input"
                 value={username}
@@ -100,7 +100,7 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="block text-xs font-600 text-slate-600 uppercase tracking-wide mb-1.5">Password</label>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Password</label>
               <div className="relative">
                 <input
                   className="input pr-10"
@@ -122,7 +122,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full justify-center py-2.5 text-sm font-600"
+              className="btn-primary w-full justify-center py-2.5 text-sm font-semibold"
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>

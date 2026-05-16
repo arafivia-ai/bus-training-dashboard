@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 const COLORS = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#be185d','#0d9488','#f59e0b','#6366f1']
@@ -6,7 +6,7 @@ const COLORS = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#be
 export default function DonutChartBox({ title, sub, data, height = 260 }) {
   if (!data?.length) return (
     <div className="card p-5">
-      <div className="text-sm font-600 text-slate-700 mb-1">{title}</div>
+      <div className="text-sm font-semibold text-slate-700 mb-1">{title}</div>
       {sub && <div className="text-xs text-slate-400 mb-4">{sub}</div>}
       <div className="flex items-center justify-center h-40 text-slate-300 text-sm">No data available</div>
     </div>
@@ -16,7 +16,7 @@ export default function DonutChartBox({ title, sub, data, height = 260 }) {
 
   return (
     <div className="card p-5">
-      <div className="text-sm font-600 text-slate-700 mb-1">{title}</div>
+      <div className="text-sm font-semibold text-slate-700 mb-1">{title}</div>
       {sub && <div className="text-xs text-slate-400 mb-3">{sub}</div>}
       <ResponsiveContainer width="100%" height={height}>
         <PieChart>

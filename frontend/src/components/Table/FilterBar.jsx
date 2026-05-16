@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
 
 export default function FilterBar({ filters, filterOpts, onFilter, onReset, search, onSearch }) {

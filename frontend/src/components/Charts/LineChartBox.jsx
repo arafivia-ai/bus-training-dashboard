@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Area, AreaChart
@@ -7,7 +7,7 @@ import {
 export default function LineChartBox({ title, sub, data, dataKey = 'value', nameKey = 'name', height = 220, color = '#2563eb' }) {
   if (!data?.length) return (
     <div className="card p-5">
-      <div className="text-sm font-600 text-slate-700 mb-1">{title}</div>
+      <div className="text-sm font-semibold text-slate-700 mb-1">{title}</div>
       {sub && <div className="text-xs text-slate-400 mb-4">{sub}</div>}
       <div className="flex items-center justify-center h-40 text-slate-300 text-sm">No data available</div>
     </div>
@@ -15,7 +15,7 @@ export default function LineChartBox({ title, sub, data, dataKey = 'value', name
 
   return (
     <div className="card p-5">
-      <div className="text-sm font-600 text-slate-700 mb-1">{title}</div>
+      <div className="text-sm font-semibold text-slate-700 mb-1">{title}</div>
       {sub && <div className="text-xs text-slate-400 mb-4">{sub}</div>}
       <ResponsiveContainer width="100%" height={height}>
         <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>

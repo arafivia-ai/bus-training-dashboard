@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function DataTable({ columns, rows, loading, page, total, limit, onPage, emptyIcon, emptyText }) {
@@ -14,8 +14,8 @@ export default function DataTable({ columns, rows, loading, page, total, limit, 
 
   if (!rows?.length) return (
     <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-      <div className="text-4xl mb-3">{emptyIcon || '📭'}</div>
-      <div className="text-sm font-500">{emptyText || 'No records found'}</div>
+      <div className="text-4xl mb-3">{emptyIcon || 'ðŸ“­'}</div>
+      <div className="text-sm font-medium">{emptyText || 'No records found'}</div>
     </div>
   )
 
@@ -26,7 +26,7 @@ export default function DataTable({ columns, rows, loading, page, total, limit, 
           <thead>
             <tr className="border-b border-slate-100">
               {columns.map(col => (
-                <th key={col.key} className="text-left py-3 px-4 text-xs font-700 uppercase tracking-wide text-slate-400 bg-slate-50 whitespace-nowrap">
+                <th key={col.key} className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wide text-slate-400 bg-slate-50 whitespace-nowrap">
                   {col.label}
                 </th>
               ))}
@@ -49,7 +49,7 @@ export default function DataTable({ columns, rows, loading, page, total, limit, 
       {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
         <span className="text-xs text-slate-400">
-          Showing {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}
+          Showing {from.toLocaleString()}â€“{to.toLocaleString()} of {total.toLocaleString()}
         </span>
         <div className="flex items-center gap-1">
           <button
@@ -65,7 +65,7 @@ export default function DataTable({ columns, rows, loading, page, total, limit, 
               <button
                 key={p}
                 onClick={() => onPage(p)}
-                className={`w-8 h-8 rounded-lg border text-xs font-600 transition-all
+                className={`w-8 h-8 rounded-lg border text-xs font-semibold transition-all
                   ${p === page ? 'bg-primary-600 border-primary-600 text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
               >
                 {p}

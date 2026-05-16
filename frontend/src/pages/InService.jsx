@@ -86,7 +86,7 @@ export default function InService() {
   const columns = [
     { key: 'sl',            label: '#' },
     { key: 'staff_id',      label: 'Staff ID' },
-    { key: 'driver_name',   label: 'Driver Name', render: v => <span className="font-500">{v || '--'}</span> },
+    { key: 'driver_name',   label: 'Driver Name', render: v => <span className="font-medium">{v || '--'}</span> },
     { key: 'nationality',   label: 'Nationality' },
     { key: 'depot',         label: 'Depot', render: v => v ? <span className="tag tag-blue">{v}</span> : '--' },
     { key: 'training_date', label: 'Date', render: v => v ? new Date(v).toLocaleDateString('en-GB') : '--' },
@@ -109,7 +109,7 @@ export default function InService() {
             <Bus size={20} className="text-primary-600"/>
           </div>
           <div>
-            <h1 className="text-lg font-700 text-slate-800">In-Service Training</h1>
+            <h1 className="text-lg font-bold text-slate-800">In-Service Training</h1>
             <p className="text-xs text-slate-400">{(analytics?.total || 0).toLocaleString()} total records</p>
           </div>
         </div>
@@ -129,8 +129,8 @@ export default function InService() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-500 transition-all ${
-              tab === t ? 'bg-white text-primary-700 shadow-sm font-600' : 'text-slate-500 hover:text-slate-700'
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              tab === t ? 'bg-white text-primary-700 shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             {t}
@@ -171,7 +171,7 @@ export default function InService() {
         <div className="card">
           <div className="p-4 border-b border-slate-100 space-y-3">
             <div className="flex items-center justify-between">
-              <div className="text-sm font-600 text-slate-700">
+              <div className="text-sm font-semibold text-slate-700">
                 Training Records <span className="text-primary-600 ml-2">{total.toLocaleString()}</span>
               </div>
             </div>

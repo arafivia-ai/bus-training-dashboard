@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Bus, BookOpen, UserCheck, Car,
@@ -39,7 +39,7 @@ export default function Sidebar() {
         </div>
         {!collapsed && (
           <div>
-            <div className="text-sm font-700 text-white leading-tight">Bus Training</div>
+            <div className="text-sm font-bold text-white leading-tight">Bus Training</div>
             <div className="text-xs text-primary-400">Operations Dashboard</div>
           </div>
         )}
@@ -50,7 +50,7 @@ export default function Sidebar() {
         {NAV.map(group => (
           <div key={group.section} className="mb-2">
             {!collapsed && (
-              <div className="text-xs font-700 uppercase tracking-widest text-primary-500 px-2 py-2">
+              <div className="text-xs font-bold uppercase tracking-widest text-primary-500 px-2 py-2">
                 {group.section}
               </div>
             )}
@@ -60,7 +60,7 @@ export default function Sidebar() {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-sm font-500 transition-all
+                  `flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-sm font-medium transition-all
                   ${isActive
                     ? 'bg-primary-600 text-white'
                     : 'text-primary-300 hover:bg-primary-800 hover:text-white'

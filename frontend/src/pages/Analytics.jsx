@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
 import { api } from '../api'
 import KPICard from '../components/Charts/KPICard'
 import BarChartBox from '../components/Charts/BarChartBox'
@@ -40,7 +40,7 @@ export default function Analytics() {
           <BarChart3 size={20} className="text-violet-600"/>
         </div>
         <div>
-          <h1 className="text-lg font-700 text-slate-800">Analytics & Reports</h1>
+          <h1 className="text-lg font-bold text-slate-800">Analytics & Reports</h1>
           <p className="text-xs text-slate-400">Live data across all modules</p>
         </div>
       </div>
@@ -55,7 +55,7 @@ export default function Analytics() {
 
       {/* In-Service */}
       <div>
-        <div className="text-xs font-700 uppercase tracking-widest text-slate-400 mb-3">Public Bus — In-Service Training</div>
+        <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Public Bus â€” In-Service Training</div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <BarChartBox title="By Depot" data={depotData} height={260}/>
           <DonutChartBox title="By Training Type" data={typeData} height={260}/>
@@ -67,7 +67,7 @@ export default function Analytics() {
 
       {/* Recruitment */}
       <div>
-        <div className="text-xs font-700 uppercase tracking-widest text-slate-400 mb-3">Recruitment Pipeline</div>
+        <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Recruitment Pipeline</div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <DonutChartBox title="Pipeline Status" data={statusData} height={260}/>
           <BarChartBox title="By Company" data={companyData} height={260}/>
@@ -76,7 +76,7 @@ export default function Analytics() {
 
       {/* Taxi */}
       <div>
-        <div className="text-xs font-700 uppercase tracking-widest text-slate-400 mb-3">Taxi & Limousine</div>
+        <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Taxi & Limousine</div>
         <BarChartBox title="By Company" data={taxiCompany} height={260}/>
       </div>
     </div>

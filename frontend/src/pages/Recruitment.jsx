@@ -90,7 +90,7 @@ export default function Recruitment() {
   const columns = [
     { key: 'sl',               label: '#' },
     { key: 'rta_id',           label: 'RTA ID' },
-    { key: 'full_name',        label: 'Name', render: v => <span className="font-500">{v || '--'}</span> },
+    { key: 'full_name',        label: 'Name', render: v => <span className="font-medium">{v || '--'}</span> },
     { key: 'nationality',      label: 'Nationality' },
     { key: 'company',          label: 'Company', render: v => v ? <span className="tag tag-blue">{v}</span> : '--' },
     { key: 'license_class',    label: 'License' },
@@ -113,7 +113,7 @@ export default function Recruitment() {
             <UserCheck size={20} className="text-amber-600"/>
           </div>
           <div>
-            <h1 className="text-lg font-700 text-slate-800">Recruitment Pipeline</h1>
+            <h1 className="text-lg font-bold text-slate-800">Recruitment Pipeline</h1>
             <p className="text-xs text-slate-400">{(analytics?.total || 0).toLocaleString()} total candidates</p>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function Recruitment() {
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-500 transition-all ${tab === t ? 'bg-white text-primary-700 shadow-sm font-600' : 'text-slate-500 hover:text-slate-700'}`}>
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${tab === t ? 'bg-white text-primary-700 shadow-sm font-semibold' : 'text-slate-500 hover:text-slate-700'}`}>
             {t}
           </button>
         ))}
@@ -163,7 +163,7 @@ export default function Recruitment() {
       {tab === 'Records' && (
         <div className="card">
           <div className="p-4 border-b border-slate-100 space-y-3">
-            <div className="text-sm font-600 text-slate-700">
+            <div className="text-sm font-semibold text-slate-700">
               Candidates <span className="text-primary-600 ml-2">{total.toLocaleString()}</span>
             </div>
             <FilterBar filters={filters} filterOpts={filterOptions} onFilter={applyFilter}
