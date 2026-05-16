@@ -84,14 +84,18 @@ function attendanceRate(arr) {
 }
 
 function trend(arr, dateField='training_date') {
+  // Returns { year: { month: count } } for multi-year line chart
   const obj = {}
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
   ;(arr?.data||[]).forEach(r => {
-    const val = r[dateField] || r['created_at']
+    const val = r[dateField]
     if (!val) return
-    const m = val.slice(0, 7)
-    obj[m] = (obj[m]||0) + 1
+    const year  = val.slice(0, 4)
+    const month = MONTHS[parseInt(val.slice(5, 7)) - 1]
+    if (!obj[year]) obj[year] = {}
+    obj[year][month] = (obj[year][month]||0) + 1
   })
-  return Object.fromEntries(Object.entries(obj).sort())
+  return obj
 }
 
 // AUTH
@@ -368,7 +372,7 @@ app.get('/api/analytics', auth, async (req, res) => {
       supabase.from('public_bus_inservice').select('training_type').eq('is_deleted', false),
       supabase.from('public_bus_inservice').select('attendance').eq('is_deleted', false),
       supabase.from('public_bus_inservice').select('nationality').eq('is_deleted', false),
-      supabase.from('public_bus_inservice').select('training_date,created_at').eq('is_deleted', false),
+      supabase.from('public_bus_inservice').select('training_date').eq('is_deleted', false).not('training_date', 'is', null),
       supabase.from('public_bus_preservice').select('company').eq('is_deleted', false),
       supabase.from('public_bus_preservice').select('status').eq('is_deleted', false),
       supabase.from('public_bus_preservice').select('nationality').eq('is_deleted', false),
