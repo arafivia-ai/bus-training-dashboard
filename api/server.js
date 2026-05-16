@@ -62,6 +62,38 @@ function adminOnly(req, res, next) {
   next()
 }
 
+function countBy(arr, key) {
+  const obj = {}
+  ;(arr?.data||[]).forEach(r => {
+    const v = r[key] || 'Unknown'
+    obj[v] = (obj[v]||0) + 1
+  })
+  return obj
+}
+
+function passRate(arr, key) {
+  const data = arr?.data||[]
+  if (!data.length) return 0
+  return Math.round(data.filter(r => (r[key]||'').toLowerCase().includes('pass')).length / data.length * 100)
+}
+
+function attendanceRate(arr) {
+  const data = arr?.data||[]
+  if (!data.length) return 0
+  return Math.round(data.filter(r => (r.attendance||'').toLowerCase() === 'present').length / data.length * 100)
+}
+
+function trend(arr, dateField='training_date') {
+  const obj = {}
+  ;(arr?.data||[]).forEach(r => {
+    const val = r[dateField] || r['created_at']
+    if (!val) return
+    const m = val.slice(0, 7)
+    obj[m] = (obj[m]||0) + 1
+  })
+  return Object.fromEntries(Object.entries(obj).sort())
+}
+
 // AUTH
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -103,7 +135,7 @@ app.delete('/api/users/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// FILTER OPTIONS — returns unique values from actual data
+// FILTERS
 app.get('/api/inservice/filters', auth, async (req, res) => {
   try {
     const [depots, types, trainers, nats] = await Promise.all([
@@ -193,7 +225,7 @@ app.get('/api/inservice', auth, async (req, res) => {
     if (from)          query = query.gte('training_date', from)
     if (to)            query = query.lte('training_date', to)
     const offset = (parseInt(page)-1)*parseInt(limit)
-    query = query.order('training_date', { ascending:false }).range(offset, offset+parseInt(limit)-1)
+    query = query.order('id', { ascending:false }).range(offset, offset+parseInt(limit)-1)
     const { data, error, count } = await query
     if (error) return res.status(500).json({ error: error.message })
     res.json({ data, total: count, page: parseInt(page) })
@@ -205,14 +237,6 @@ app.post('/api/inservice', auth, adminOnly, async (req, res) => {
     const { data, error } = await supabase.from('public_bus_inservice').insert([req.body]).select()
     if (error) return res.status(400).json({ error: error.message })
     res.status(201).json(data[0])
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.put('/api/inservice/:id', auth, adminOnly, async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('public_bus_inservice').update(req.body).eq('id', req.params.id).select()
-    if (error) return res.status(400).json({ error: error.message })
-    res.json(data[0])
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
@@ -232,8 +256,8 @@ app.get('/api/preservice', auth, async (req, res) => {
     if (status)         query = query.eq('status', status)
     if (nationality)    query = query.eq('nationality', nationality)
     if (training_batch) query = query.eq('training_batch', training_batch)
-    if (from)           query = query.gte('join_date', from)
-    if (to)             query = query.lte('join_date', to)
+    if (from)           query = query.gte('created_at', from)
+    if (to)             query = query.lte('created_at', to)
     const offset = (parseInt(page)-1)*parseInt(limit)
     query = query.order('id', { ascending:false }).range(offset, offset+parseInt(limit)-1)
     const { data, error, count } = await query
@@ -290,7 +314,7 @@ app.delete('/api/recruitment/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// TAXI & LIMOUSINE
+// TAXI
 app.get('/api/taxi', auth, async (req, res) => {
   try {
     const { company, training_type, franchise, nationality, attendance, from, to, page=1, limit=100 } = req.query
@@ -325,78 +349,12 @@ app.delete('/api/taxi/:id', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// SCHOOL BUS DRIVERS
-app.get('/api/schoolbus/drivers', auth, async (req, res) => {
-  try {
-    const { school, training_type, attendance, from, to, page=1, limit=100 } = req.query
-    let query = supabase.from('school_bus_drivers').select('*', { count:'exact' }).eq('is_deleted', false)
-    if (school)        query = query.eq('school', school)
-    if (training_type) query = query.eq('training_type', training_type)
-    if (attendance)    query = query.eq('attendance', attendance)
-    if (from)          query = query.gte('training_date', from)
-    if (to)            query = query.lte('training_date', to)
-    const offset = (parseInt(page)-1)*parseInt(limit)
-    query = query.order('training_date', { ascending:false }).range(offset, offset+parseInt(limit)-1)
-    const { data, error, count } = await query
-    if (error) return res.status(500).json({ error: error.message })
-    res.json({ data, total: count, page: parseInt(page) })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.post('/api/schoolbus/drivers', auth, adminOnly, async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('school_bus_drivers').insert([req.body]).select()
-    if (error) return res.status(400).json({ error: error.message })
-    res.status(201).json(data[0])
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.delete('/api/schoolbus/drivers/:id', auth, adminOnly, async (req, res) => {
-  try {
-    await supabase.from('school_bus_drivers').update({ is_deleted:true }).eq('id', req.params.id)
-    res.json({ ok: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-// SCHOOL BUS SUPERVISORS
-app.get('/api/schoolbus/supervisors', auth, async (req, res) => {
-  try {
-    const { school, training_type, attendance, from, to, page=1, limit=100 } = req.query
-    let query = supabase.from('school_bus_supervisors').select('*', { count:'exact' }).eq('is_deleted', false)
-    if (school)        query = query.eq('school', school)
-    if (training_type) query = query.eq('training_type', training_type)
-    if (attendance)    query = query.eq('attendance', attendance)
-    if (from)          query = query.gte('training_date', from)
-    if (to)            query = query.lte('training_date', to)
-    const offset = (parseInt(page)-1)*parseInt(limit)
-    query = query.order('training_date', { ascending:false }).range(offset, offset+parseInt(limit)-1)
-    const { data, error, count } = await query
-    if (error) return res.status(500).json({ error: error.message })
-    res.json({ data, total: count, page: parseInt(page) })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.post('/api/schoolbus/supervisors', auth, adminOnly, async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('school_bus_supervisors').insert([req.body]).select()
-    if (error) return res.status(400).json({ error: error.message })
-    res.status(201).json(data[0])
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-app.delete('/api/schoolbus/supervisors/:id', auth, adminOnly, async (req, res) => {
-  try {
-    await supabase.from('school_bus_supervisors').update({ is_deleted:true }).eq('id', req.params.id)
-    res.json({ ok: true })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
 // ANALYTICS
 app.get('/api/analytics', auth, async (req, res) => {
   try {
     const [
-      isCount, psCount, recCount, taxiCount, sbdCount, sbsCount,
-      isDepot, isType, isAtt, isNat,
+      isCount, psCount, recCount, taxiCount,
+      isDepot, isType, isAtt, isNat, isTrend,
       psCompany, psStatus, psNat, psBatch,
       psFinal, psScenario, psEtest, psOcc, psFire,
       recStatus, recCompany, recNat, recRoad,
@@ -406,12 +364,11 @@ app.get('/api/analytics', auth, async (req, res) => {
       supabase.from('public_bus_preservice').select('id', { count:'exact', head:true }).eq('is_deleted', false),
       supabase.from('recruitment').select('id', { count:'exact', head:true }).eq('is_deleted', false),
       supabase.from('taxi_limousine').select('id', { count:'exact', head:true }).eq('is_deleted', false),
-      supabase.from('school_bus_drivers').select('id', { count:'exact', head:true }).eq('is_deleted', false),
-      supabase.from('school_bus_supervisors').select('id', { count:'exact', head:true }).eq('is_deleted', false),
       supabase.from('public_bus_inservice').select('depot').eq('is_deleted', false),
       supabase.from('public_bus_inservice').select('training_type').eq('is_deleted', false),
       supabase.from('public_bus_inservice').select('attendance').eq('is_deleted', false),
       supabase.from('public_bus_inservice').select('nationality').eq('is_deleted', false),
+      supabase.from('public_bus_inservice').select('training_date,created_at').eq('is_deleted', false),
       supabase.from('public_bus_preservice').select('company').eq('is_deleted', false),
       supabase.from('public_bus_preservice').select('status').eq('is_deleted', false),
       supabase.from('public_bus_preservice').select('nationality').eq('is_deleted', false),
@@ -431,66 +388,43 @@ app.get('/api/analytics', auth, async (req, res) => {
       supabase.from('taxi_limousine').select('franchise').eq('is_deleted', false),
     ])
 
-    function countBy(arr, key) {
-      const obj = {}
-      ;(arr?.data||[]).forEach(r => { const v = r[key]||'Unknown'; obj[v]=(obj[v]||0)+1 })
-      return obj
-    }
-
-    function passRate(arr, key) {
-      const data = arr?.data||[]
-      if (!data.length) return 0
-      return Math.round(data.filter(r=>(r[key]||'').toLowerCase().includes('pass')).length/data.length*100)
-    }
-
-    function attendanceRate(arr) {
-      const data = arr?.data||[]
-      if (!data.length) return 0
-      return Math.round(data.filter(r=>(r.attendance||'').toLowerCase()==='present').length/data.length*100)
-    }
-
     res.json({
       inservice: {
-        total:          isCount.count||0,
+        total:          isCount.count || 0,
         attendanceRate: attendanceRate(isAtt),
-        byDepot:        countBy(isDepot,'depot'),
-        byType:         countBy(isType,'training_type'),
-        byNationality:  countBy(isNat,'nationality'),
-        byAttendance:   countBy(isAtt,'attendance'),
+        byDepot:        countBy(isDepot, 'depot'),
+        byType:         countBy(isType, 'training_type'),
+        byNationality:  countBy(isNat, 'nationality'),
+        byAttendance:   countBy(isAtt, 'attendance'),
+        trend:          trend(isTrend, 'training_date'),
       },
       preservice: {
-        total:               psCount.count||0,
-        byCompany:           countBy(psCompany,'company'),
-        byStatus:            countBy(psStatus,'status'),
-        byNationality:       countBy(psNat,'nationality'),
-        byBatch:             countBy(psBatch,'training_batch'),
-        finalAssessPassRate: passRate(psFinal,'final_assessment'),
-        scenarioPassRate:    passRate(psScenario,'scenario_result'),
-        postEtestPassRate:   passRate(psEtest,'post_etest_result'),
-        occPassRate:         passRate(psOcc,'occ_result'),
-        firePassRate:        passRate(psFire,'fire_fighting'),
+        total:               psCount.count || 0,
+        byCompany:           countBy(psCompany, 'company'),
+        byStatus:            countBy(psStatus, 'status'),
+        byNationality:       countBy(psNat, 'nationality'),
+        byBatch:             countBy(psBatch, 'training_batch'),
+        finalAssessPassRate: passRate(psFinal, 'final_assessment'),
+        scenarioPassRate:    passRate(psScenario, 'scenario_result'),
+        postEtestPassRate:   passRate(psEtest, 'post_etest_result'),
+        occPassRate:         passRate(psOcc, 'occ_result'),
+        firePassRate:        passRate(psFire, 'fire_fighting'),
       },
       recruitment: {
-        total:         recCount.count||0,
-        byStatus:      countBy(recStatus,'status'),
-        byCompany:     countBy(recCompany,'company'),
-        byNationality: countBy(recNat,'nationality'),
-        byRoadTest:    countBy(recRoad,'road_test_result'),
+        total:         recCount.count || 0,
+        byStatus:      countBy(recStatus, 'status'),
+        byCompany:     countBy(recCompany, 'company'),
+        byNationality: countBy(recNat, 'nationality'),
+        byRoadTest:    countBy(recRoad, 'road_test_result'),
       },
       taxi: {
-        total:          taxiCount.count||0,
+        total:          taxiCount.count || 0,
         attendanceRate: attendanceRate(taxiAtt),
-        byCompany:      countBy(taxiCompany,'company'),
-        byType:         countBy(taxiType,'training_type'),
-        byFranchise:    countBy(taxiFranchise,'franchise'),
-        byAttendance:   countBy(taxiAtt,'attendance'),
+        byCompany:      countBy(taxiCompany, 'company'),
+        byType:         countBy(taxiType, 'training_type'),
+        byFranchise:    countBy(taxiFranchise, 'franchise'),
+        byAttendance:   countBy(taxiAtt, 'attendance'),
       },
-      schoolDrivers: {
-        total:    sbdCount.count||0,
-      },
-      schoolSupervisors: {
-        total:    sbsCount.count||0,
-      }
     })
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }) }
 })
@@ -500,15 +434,11 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
   try {
     const { type, csvData } = req.body
     if (!csvData) return res.status(400).json({ error: 'No CSV data' })
-
     const records = parse(csvData, {
       columns: true, skip_empty_lines: true, trim: true,
       relax_column_count: true, relax_quotes: true, bom: true
     })
-
     if (!records.length) return res.status(400).json({ error: 'CSV is empty' })
-    console.log(`Upload [${type}]: ${records.length} rows`)
-
     let inserted = 0, skipped = 0
 
     if (type === 'inservice') {
@@ -516,30 +446,30 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
       for (const r of records) {
         try {
           const row = {
-            sl:            parseInt(r['SL'])||null,
+            sl: parseInt(r['SL'])||null,
             training_date: parseDate(r['Training Date']),
-            staff_id:      r['Staff ID']?.trim()||null,
-            driver_name:   r['Driver Name']?.trim()||null,
-            nationality:   r['Nationality']?.trim()||null,
-            depot:         r['Depot']?.trim()||null,
+            staff_id: r['Staff ID']?.trim()||null,
+            driver_name: r['Driver Name']?.trim()||null,
+            nationality: r['Nationality']?.trim()||null,
+            depot: r['Depot']?.trim()||null,
             training_type: r['Type of Training']?.trim()||null,
-            course_name:   r['Training Course Name']?.trim()||null,
-            duration:      r['Duration']?.trim()||null,
-            trainer:       r['Trainer']?.trim()||null,
-            attendance:    r['Attendance']?.trim()||null
+            course_name: r['Training Course Name']?.trim()||null,
+            duration: r['Duration']?.trim()||null,
+            trainer: r['Trainer']?.trim()||null,
+            attendance: r['Attendance']?.trim()||null,
           }
           if (!row.driver_name && !row.staff_id) { skipped++; continue }
           batch.push(row)
           if (batch.length === 200) {
             const { error } = await supabase.from('public_bus_inservice').insert(batch)
-            if (error) { console.error('IS:', error.message); skipped+=batch.length } else inserted+=batch.length
+            if (error) skipped += batch.length; else inserted += batch.length
             batch = []
           }
         } catch(e) { skipped++ }
       }
-      if (batch.length > 0) {
+      if (batch.length) {
         const { error } = await supabase.from('public_bus_inservice').insert(batch)
-        if (error) skipped+=batch.length; else inserted+=batch.length
+        if (error) skipped += batch.length; else inserted += batch.length
       }
       return res.json({ ok:true, inserted, skipped, total:records.length })
     }
@@ -549,61 +479,57 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
       for (const r of records) {
         try {
           const row = {
-            sl:                       parseInt(r['SL'])||null,
-            rta_id:                   r['RTA ID']?.trim()||r['RTA ID ']?.trim()||null,
-            license_no:               r['License No.']?.trim()||null,
-            driver_name:              r['Driver Name']?.trim()||null,
-            nationality:              r['Nationality']?.trim()||null,
-            dob:                      parseDate(r['DOB']),
-            license_issued:           parseDate(r['Date of issued']),
-            license_expired:          parseDate(r['Date of expired']),
-            place_of_issue:           r['Place of issue']?.trim()||null,
-            traffic_file:             r['Traffic file no']?.trim()||null,
-            contact:                  r['Contact']?.trim()||null,
-            age:                      parseFloat(r['Age'])||null,
-            company:                  r['Company']?.trim()||null,
-            road_test_date:           parseDate(r['Date of Road test']),
-            trainer_name:             r['Name of Trainer']?.trim()||null,
-            interview_date:           parseDate(r['Date of Interview']),
-            mode_of_hire:             r['Mode of Hire']?.trim()||null,
-            payment_date:             parseDate(r['Payment Date']),
-            sales_order:              r['Sales Order #']?.trim()||null,
-            revenue:                  r['Revenue']?.trim()||null,
-            join_date:                parseDate(r['Join Date']),
-            training_batch:           r['Training Batch']?.trim()||null,
-            trainer_classroom:        r['Name of trainer -  Class Room']?.trim()||null,
-            trainer_wheel:            r['Name of Trainer - Behind the wheel']?.trim()||null,
-            post_etest_date:          parseDate(r['Date of Post e test']),
-            post_etest_result:        r[' Post E test']?.trim()||r['Post E test']?.trim()||null,
-            occ_date:                 parseDate(r['Date of OCC']),
-            occ_result:               r['OCC']?.trim()||null,
-            training_date:            parseDate(r['Date']),
-            fire_fighting:            r['Fire Fighting']?.trim()||null,
-            road_assessment_date:     parseDate(r['Date of Road Asssesment']),
+            sl: parseInt(r['SL'])||null,
+            rta_id: r['RTA ID']?.trim()||r['RTA ID ']?.trim()||null,
+            license_no: r['License No.']?.trim()||null,
+            driver_name: r['Driver Name']?.trim()||null,
+            nationality: r['Nationality']?.trim()||null,
+            dob: parseDate(r['DOB']),
+            license_issued: parseDate(r['Date of issued']),
+            license_expired: parseDate(r['Date of expired']),
+            place_of_issue: r['Place of issue']?.trim()||null,
+            traffic_file: r['Traffic file no']?.trim()||null,
+            contact: r['Contact']?.trim()||null,
+            age: parseFloat(r['Age'])||null,
+            company: r['Company']?.trim()||null,
+            road_test_date: parseDate(r['Date of Road test']),
+            trainer_name: r['Name of Trainer']?.trim()||null,
+            interview_date: parseDate(r['Date of Interview']),
+            join_date: parseDate(r['Join Date']),
+            training_batch: r['Training Batch']?.trim()||null,
+            trainer_classroom: r['Name of trainer -  Class Room']?.trim()||null,
+            trainer_wheel: r['Name of Trainer - Behind the wheel']?.trim()||null,
+            post_etest_date: parseDate(r['Date of Post e test']),
+            post_etest_result: r[' Post E test']?.trim()||r['Post E test']?.trim()||null,
+            occ_date: parseDate(r['Date of OCC']),
+            occ_result: r['OCC']?.trim()||null,
+            training_date: parseDate(r['Date']),
+            fire_fighting: r['Fire Fighting']?.trim()||null,
+            road_assessment_date: parseDate(r['Date of Road Asssesment']),
             final_assessment_trainer: r['Final Asssement Trainer']?.trim()||null,
-            final_assessment:         r['Final assesment']?.trim()||null,
-            scenario_date:            parseDate(r['Date of Scenario']),
-            scenario_result:          r['Scenario Result']?.trim()||null,
-            graduation_date:          parseDate(r['Graduation date']),
-            number_of_days:           parseInt(r['Number of Days'])||null,
-            transfer_date:            parseDate(r['Date of transfer operation ']),
-            status:                   r['Status']?.trim()||null,
-            notes:                    r['Additional notes Regarding training']?.trim()||null,
-            weekly_report:            r['weekly Report']?.trim()||null,
-            weekly_report2:           r['weekly Report 2']?.trim()||null
+            final_assessment: r['Final assesment']?.trim()||null,
+            scenario_date: parseDate(r['Date of Scenario']),
+            scenario_result: r['Scenario Result']?.trim()||null,
+            graduation_date: parseDate(r['Graduation date']),
+            number_of_days: parseInt(r['Number of Days'])||null,
+            transfer_date: parseDate(r['Date of transfer operation ']),
+            status: r['Status']?.trim()||null,
+            notes: r['Additional notes Regarding training']?.trim()||null,
+            weekly_report: r['weekly Report']?.trim()||null,
+            weekly_report2: r['weekly Report 2']?.trim()||null,
           }
           if (!row.driver_name) { skipped++; continue }
           batch.push(row)
           if (batch.length === 100) {
             const { error } = await supabase.from('public_bus_preservice').insert(batch)
-            if (error) { console.error('PS:', error.message); skipped+=batch.length } else inserted+=batch.length
+            if (error) skipped += batch.length; else inserted += batch.length
             batch = []
           }
         } catch(e) { skipped++ }
       }
-      if (batch.length > 0) {
+      if (batch.length) {
         const { error } = await supabase.from('public_bus_preservice').insert(batch)
-        if (error) skipped+=batch.length; else inserted+=batch.length
+        if (error) skipped += batch.length; else inserted += batch.length
       }
       return res.json({ ok:true, inserted, skipped, total:records.length })
     }
@@ -613,43 +539,43 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
       for (const r of records) {
         try {
           const row = {
-            sl:               parseInt(r['SL'])||null,
-            rta_id:           r['RTA ID']?.trim()||null,
-            license_no:       r['License No.']?.trim()||null,
-            full_name:        r['Name as per Driving License']?.trim()||null,
-            nationality:      r['Nationality']?.trim()||null,
-            dob:              parseDate(r['DOB']),
-            license_issued:   parseDate(r['Date of issued']),
-            license_expired:  parseDate(r['Date of expired']),
-            place_of_issue:   r['Place of issue']?.trim()||null,
-            license_class:    r['Class of License']?.trim()||null,
-            traffic_file:     r['Traffic file no']?.trim()||null,
-            contact:          r['Contact']?.trim()||null,
-            age:              parseFloat(r['Age'])||null,
-            company:          r['Company']?.trim()||null,
-            road_test_date:   parseDate(r['Date of Road test']),
+            sl: parseInt(r['SL'])||null,
+            rta_id: r['RTA ID']?.trim()||null,
+            license_no: r['License No.']?.trim()||null,
+            full_name: r['Name as per Driving License']?.trim()||null,
+            nationality: r['Nationality']?.trim()||null,
+            dob: parseDate(r['DOB']),
+            age: parseFloat(r['Age'])||null,
+            license_issued: parseDate(r['Date of issued']),
+            license_expired: parseDate(r['Date of expired']),
+            place_of_issue: r['Place of issue']?.trim()||null,
+            license_class: r['Class of License']?.trim()||null,
+            traffic_file: r['Traffic file no']?.trim()||null,
+            contact: r['Contact']?.trim()||null,
+            company: r['Company']?.trim()||null,
+            road_test_date: parseDate(r['Date of Road test']),
             road_test_result: r['Road test result ']?.trim()||r['Road test result']?.trim()||null,
-            interview_date:   parseDate(r['Date of Interview']),
+            interview_date: parseDate(r['Date of Interview']),
             interview_result: r['Interview Result']?.trim()||null,
-            remarks:          r['Remarks ']?.trim()||r['Remarks']?.trim()||null,
-            status:           r['Status 1']?.trim()||r['Status']?.trim()||null,
-            training_batch:   r['Training Batch #']?.trim()||null,
-            training_start:   parseDate(r['Date of join Training']),
-            graduation_date:  parseDate(r['Date of Graduation']),
-            transfer_date:    parseDate(r['Date of Transfer operation'])
+            remarks: r['Remarks ']?.trim()||r['Remarks']?.trim()||null,
+            status: r['Status 1']?.trim()||r['Status']?.trim()||null,
+            training_batch: r['Training Batch #']?.trim()||null,
+            training_start: parseDate(r['Date of join Training']),
+            graduation_date: parseDate(r['Date of Graduation']),
+            transfer_date: parseDate(r['Date of Transfer operation']),
           }
           if (!row.full_name) { skipped++; continue }
           batch.push(row)
           if (batch.length === 200) {
             const { error } = await supabase.from('recruitment').insert(batch)
-            if (error) { console.error('REC:', error.message); skipped+=batch.length } else inserted+=batch.length
+            if (error) skipped += batch.length; else inserted += batch.length
             batch = []
           }
         } catch(e) { skipped++ }
       }
-      if (batch.length > 0) {
+      if (batch.length) {
         const { error } = await supabase.from('recruitment').insert(batch)
-        if (error) skipped+=batch.length; else inserted+=batch.length
+        if (error) skipped += batch.length; else inserted += batch.length
       }
       return res.json({ ok:true, inserted, skipped, total:records.length })
     }
@@ -659,94 +585,32 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
       for (const r of records) {
         try {
           const row = {
-            sl:             parseInt(r['SL'])||null,
-            license:        r['License']?.trim()||null,
-            full_name:      r['Name']?.trim()||null,
-            nationality:    r['Nationality']?.trim()||null,
-            franchise:      r['Franchise/Limousine']?.trim()||null,
-            traffic_file:   r['Traffic File']?.trim()||null,
-            apply_date:     parseDate(r['Apply Date ']),
+            sl: parseInt(r['SL'])||null,
+            license: r['License']?.trim()||null,
+            full_name: r['Name']?.trim()||null,
+            nationality: r['Nationality']?.trim()||null,
+            franchise: r['Franchise/Limousine']?.trim()||null,
+            traffic_file: r['Traffic File']?.trim()||null,
+            company: r['Company ']?.trim()||r['Company']?.trim()||null,
+            institute: r['Institute']?.trim()||null,
+            training_type: r['Training Type']?.trim()||null,
+            apply_date: parseDate(r['Apply Date ']),
             training_start: parseDate(r['Training Start ']),
-            training_end:   parseDate(r['Training End']),
-            attendance:     r['Attendance']?.trim()||null,
-            training_type:  r['Training Type']?.trim()||null,
-            institute:      r['Institute']?.trim()||null,
-            company:        r['Company ']?.trim()||r['Company']?.trim()||null,
+            training_end: parseDate(r['Training End']),
+            attendance: r['Attendance']?.trim()||null,
           }
           if (!row.full_name && !row.license) { skipped++; continue }
           batch.push(row)
           if (batch.length === 200) {
             const { error } = await supabase.from('taxi_limousine').insert(batch)
-            if (error) { console.error('TAXI:', error.message); skipped+=batch.length } else inserted+=batch.length
+            if (error) skipped += batch.length; else inserted += batch.length
             batch = []
           }
         } catch(e) { skipped++ }
       }
-      if (batch.length > 0) {
+      if (batch.length) {
         const { error } = await supabase.from('taxi_limousine').insert(batch)
-        if (error) skipped+=batch.length; else inserted+=batch.length
-      }
-      return res.json({ ok:true, inserted, skipped, total:records.length })
-    }
-
-    if (type === 'sbdrivers') {
-      let batch = []
-      for (const r of records) {
-        try {
-          const row = {
-            staff_id:      r['Staff ID']?.trim()||null,
-            driver_name:   r['Driver Name']?.trim()||r['Name']?.trim()||null,
-            nationality:   r['Nationality']?.trim()||null,
-            school:        r['School']?.trim()||null,
-            training_date: parseDate(r['Training Date']||r['Date']),
-            training_type: r['Training Type']?.trim()||r['Type']?.trim()||null,
-            course:        r['Course']?.trim()||null,
-            trainer:       r['Trainer']?.trim()||null,
-            attendance:    r['Attendance']?.trim()||null
-          }
-          if (!row.driver_name) { skipped++; continue }
-          batch.push(row)
-          if (batch.length === 200) {
-            const { error } = await supabase.from('school_bus_drivers').insert(batch)
-            if (error) skipped+=batch.length; else inserted+=batch.length
-            batch = []
-          }
-        } catch(e) { skipped++ }
-      }
-      if (batch.length > 0) {
-        const { error } = await supabase.from('school_bus_drivers').insert(batch)
-        if (error) skipped+=batch.length; else inserted+=batch.length
-      }
-      return res.json({ ok:true, inserted, skipped, total:records.length })
-    }
-
-    if (type === 'sbsupervisors') {
-      let batch = []
-      for (const r of records) {
-        try {
-          const row = {
-            staff_id:        r['Staff ID']?.trim()||null,
-            supervisor_name: r['Supervisor Name']?.trim()||r['Name']?.trim()||null,
-            nationality:     r['Nationality']?.trim()||null,
-            school:          r['School']?.trim()||null,
-            training_date:   parseDate(r['Training Date']||r['Date']),
-            training_type:   r['Training Type']?.trim()||r['Type']?.trim()||null,
-            course:          r['Course']?.trim()||null,
-            trainer:         r['Trainer']?.trim()||null,
-            attendance:      r['Attendance']?.trim()||null
-          }
-          if (!row.supervisor_name) { skipped++; continue }
-          batch.push(row)
-          if (batch.length === 200) {
-            const { error } = await supabase.from('school_bus_supervisors').insert(batch)
-            if (error) skipped+=batch.length; else inserted+=batch.length
-            batch = []
-          }
-        } catch(e) { skipped++ }
-      }
-      if (batch.length > 0) {
-        const { error } = await supabase.from('school_bus_supervisors').insert(batch)
-        if (error) skipped+=batch.length; else inserted+=batch.length
+        if (error) skipped += batch.length; else inserted += batch.length
       }
       return res.json({ ok:true, inserted, skipped, total:records.length })
     }
@@ -755,44 +619,32 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: err.message }) }
 })
 
-// EXCEL DIRECT UPLOAD — receives pre-mapped rows from watcher
+// EXCEL UPLOAD
 app.post('/api/upload/excel', auth, adminOnly, async (req, res) => {
   try {
     const { type, rows, isFirstChunk, isFinalChunk } = req.body
     if (!rows?.length) return res.status(400).json({ error: 'No rows' })
-
     const tableMap = {
       inservice:   'public_bus_inservice',
       preservice:  'public_bus_preservice',
       recruitment: 'recruitment',
       taxi:        'taxi_limousine',
     }
-
     const table = tableMap[type]
     if (!table) return res.status(400).json({ error: 'Invalid type' })
-
-    // Clear table only on first chunk to avoid duplicates
     if (isFirstChunk) {
-      console.log(`Clearing ${table} before fresh import...`)
       await supabase.from(table).delete().neq('id', 0)
     }
-
     let inserted = 0, skipped = 0
-
     for (let i = 0; i < rows.length; i += 200) {
       const batch = rows.slice(i, i + 200)
       const { error } = await supabase.from(table).insert(batch)
       if (error) { console.error(type, error.message); skipped += batch.length }
       else inserted += batch.length
     }
-
-    if (isFinalChunk) {
-      console.log(`${type} sync complete: ${inserted} inserted`)
-    }
-
-    res.json({ ok: true, inserted, skipped, total: rows.length })
+    res.json({ ok:true, inserted, skipped, total:rows.length })
   } catch(err) { res.status(500).json({ error: err.message }) }
-}) 
+})
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`))
