@@ -758,7 +758,7 @@ app.post('/api/upload/csv', auth, adminOnly, async (req, res) => {
 // EXCEL DIRECT UPLOAD — receives pre-mapped rows from watcher
 app.post('/api/upload/excel', auth, adminOnly, async (req, res) => {
   try {
-    const { type, rows } = req.body
+    const { type, rows, isFirstChunk, isFinalChunk } = req.body
     if (!rows?.length) return res.status(400).json({ error: 'No rows' })
 
     const tableMap = {
@@ -771,6 +771,12 @@ app.post('/api/upload/excel', auth, adminOnly, async (req, res) => {
     const table = tableMap[type]
     if (!table) return res.status(400).json({ error: 'Invalid type' })
 
+    // Clear table only on first chunk to avoid duplicates
+    if (isFirstChunk) {
+      console.log(`Clearing ${table} before fresh import...`)
+      await supabase.from(table).delete().neq('id', 0)
+    }
+
     let inserted = 0, skipped = 0
 
     for (let i = 0; i < rows.length; i += 200) {
@@ -778,6 +784,10 @@ app.post('/api/upload/excel', auth, adminOnly, async (req, res) => {
       const { error } = await supabase.from(table).insert(batch)
       if (error) { console.error(type, error.message); skipped += batch.length }
       else inserted += batch.length
+    }
+
+    if (isFinalChunk) {
+      console.log(`${type} sync complete: ${inserted} inserted`)
     }
 
     res.json({ ok: true, inserted, skipped, total: rows.length })

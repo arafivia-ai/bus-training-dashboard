@@ -197,7 +197,7 @@ function mapRow(type, headers, row) {
   return null
 }
 
-async function uploadBatch(type, rows) {
+async function uploadBatch(type, rows, isFirstChunk, isFinalChunk) {
   if (!token) await login()
   const res = await fetch(`${API_URL}/api/upload/excel`, {
     method: 'POST',
@@ -205,9 +205,9 @@ async function uploadBatch(type, rows) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ type, rows })
+    body: JSON.stringify({ type, rows, isFirstChunk, isFinalChunk })
   })
-  if (res.status === 401) { token = null; await login(); return uploadBatch(type, rows) }
+  if (res.status === 401) { token = null; await login(); return uploadBatch(type, rows, isFirstChunk, isFinalChunk) }
   return await res.json()
 }
 
@@ -219,10 +219,15 @@ async function processFile(filePath, type, sheetIndex, headerRow) {
 
     let inserted = 0, skipped = 0
 
+    const totalChunks = Math.ceil(dataRows.length / CHUNK_SIZE)
+
     for (let i = 0; i < dataRows.length; i += CHUNK_SIZE) {
+      const chunkIndex = Math.floor(i / CHUNK_SIZE)
+      const isFirstChunk = chunkIndex === 0
+      const isFinalChunk = chunkIndex === totalChunks - 1
       const chunk = dataRows.slice(i, i + CHUNK_SIZE)
       const mapped = chunk.map(row => mapRow(type, headers, row)).filter(r => r !== null)
-      const result = await uploadBatch(type, mapped)
+      const result = await uploadBatch(type, mapped, isFirstChunk, isFinalChunk)
       if (result?.ok) {
         inserted += result.inserted
         skipped += result.skipped
